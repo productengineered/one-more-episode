@@ -1,21 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { epCode, formatDateTime, relativeDays } from "@/lib/format";
+import { dayLabel, epCode, formatDateTime, relativeDays } from "@/lib/format";
 import { getAllProgress, getUpcoming } from "@/lib/queries";
+import { getUserTimezone } from "@/lib/settings";
 import { RefreshAllButton } from "@/components/RefreshAllButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function UpcomingPage() {
+  const tz = await getUserTimezone();
   const [upcoming, progress] = await Promise.all([getUpcoming(), getAllProgress()]);
 
   const byDate = new Map<string, typeof upcoming>();
   for (const u of upcoming) {
-    const key = new Date(u.episode.airstamp!).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
+    const key = dayLabel(u.episode.airstamp!, tz);
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push(u);
   }
@@ -82,7 +80,7 @@ export default async function UpcomingPage() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right text-xs text-zinc-500">
-                  <p>{formatDateTime(episode.airstamp)}</p>
+                  <p>{formatDateTime(episode.airstamp, tz)}</p>
                   {show.network && <p className="text-zinc-600">{show.network}</p>}
                 </div>
               </li>

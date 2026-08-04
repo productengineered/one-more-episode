@@ -18,6 +18,12 @@ export async function deleteSetting(key: string) {
   await db.delete(settings).where(eq(settings.key, key));
 }
 
+/** The user's IANA timezone from Settings, or undefined for the server default. */
+export async function getUserTimezone(): Promise<string | undefined> {
+  const tz = await getSetting("timezone").catch(() => null);
+  return tz ?? undefined;
+}
+
 export interface TmdbCredential {
   kind: "bearer" | "v3"; // v4 read access token vs classic v3 api key
   value: string;

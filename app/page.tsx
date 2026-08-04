@@ -4,10 +4,12 @@ import { WatchedButton } from "@/components/WatchedButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { epCode, formatDate } from "@/lib/format";
 import { getAllProgress } from "@/lib/queries";
+import { getUserTimezone } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function WatchNextPage() {
+  const tz = await getUserTimezone();
   const progress = await getAllProgress();
   const behind = progress
     .filter((p) => p.nextUnwatched)
@@ -82,7 +84,7 @@ export default async function WatchNextPage() {
                   </span>{" "}
                   {ep.name}
                 </p>
-                <p className="text-xs text-zinc-600">{formatDate(ep.airdate ?? ep.airstamp)}</p>
+                <p className="text-xs text-zinc-600">{formatDate(ep.airstamp ?? ep.airdate, tz)}</p>
                 <div className="mt-auto flex items-center gap-3 pt-2">
                   <div className="flex-1">
                     <ProgressBar value={watchedCount} max={airedCount} />

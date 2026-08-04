@@ -49,3 +49,6 @@ https://github.com/productengineered/one-more-episode
 - The owner's real library lives in `data/tv.db`. When testing mutations
   against it, revert precisely afterwards (match on showId + exact
   timestamps), never by broad date-range deletes.
+- Dates: always format via `lib/format.ts` helpers, prefer `airstamp` over
+  `airdate` (date-only strings shift a day if parsed as UTC), and pass the
+  user's timezone from `getUserTimezone()` — the server may run in UTC.

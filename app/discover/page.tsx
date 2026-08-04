@@ -6,7 +6,8 @@ import { FollowButton } from "@/components/FollowButton";
 import { RefreshAiringButton } from "@/components/RefreshAiringButton";
 import { db } from "@/lib/db";
 import { airing, shows, type AiringShow } from "@/lib/db/schema";
-import { epCode, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
+import { dayLabel, epCode, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
+import { getUserTimezone } from "@/lib/settings";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import { TrailerButton } from "@/components/TrailerButton";
 
@@ -56,6 +57,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
   };
 
   const rows = await loadAiring();
+  const tz = await getUserTimezone();
   const tmdbConfigured = await isTmdbConfigured();
   const upcoming = rows.filter((p) => Date.parse(p.nextAirAt) > Date.now() - 86400_000);
 
@@ -93,11 +95,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
     groups.set(null, filtered);
   } else {
     for (const p of filtered) {
-      const key = new Date(p.nextAirAt).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      });
+      const key = dayLabel(p.nextAirAt, tz);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(p);
     }
@@ -159,6 +157,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                 following={followedIds.has(p.showId)}
                 showBuzz={current.sort === "buzz"}
                 trailers={tmdbConfigured}
+                tz={tz}
               />
             ))}
           </ul>
@@ -173,11 +172,13 @@ function AiringCard({
   following,
   showBuzz,
   trailers,
+  tz,
 }: {
   item: AiringShow;
   following: boolean;
   showBuzz: boolean;
   trailers: boolean;
+  tz: string | undefined;
 }) {
   const genres = parseGenres(p);
   return (
@@ -220,7 +221,7 @@ function AiringCard({
             {p.season !== null && p.number !== null && (
               <span className="mr-2 font-mono">{epCode(p.season, p.number)}</span>
             )}
-            {formatDateTime(p.nextAirAt)}
+            {formatDateTime(p.nextAirAt, tz)}
             {showBuzz && ` · buzz ${p.weight}`}
           </p>
           {trailers && (

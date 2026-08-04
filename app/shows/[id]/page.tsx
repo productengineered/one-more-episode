@@ -11,6 +11,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { SimilarGrid } from "@/components/SimilarGrid";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 import { getShowDetail } from "@/lib/queries";
+import { getUserTimezone } from "@/lib/settings";
 import { getSimilarShows } from "@/lib/similar";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import { syncShow } from "@/lib/sync";
@@ -57,6 +58,7 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
     .sort((a, b) => Date.parse(a.airstamp!) - Date.parse(b.airstamp!))[0];
   const genres: string[] = show.genres ? JSON.parse(show.genres) : [];
 
+  const tz = await getUserTimezone();
   const tmdbConfigured = await isTmdbConfigured();
   const similarShows = tmdbConfigured ? await getSimilarShows(show).catch(() => []) : [];
   const trailerVideos = tmdbConfigured
@@ -111,7 +113,7 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
           {nextAiring && (
             <p className="text-sm">
               <span className="rounded-lg bg-violet-600/15 px-2 py-1 text-violet-300">
-                Next: {nextAiring.name ?? "TBA"} · {formatDateTime(nextAiring.airstamp)} (
+                Next: {nextAiring.name ?? "TBA"} · {formatDateTime(nextAiring.airstamp, tz)} (
                 {relativeDays(nextAiring.airstamp!)})
               </span>
             </p>
@@ -209,7 +211,7 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
                           {e.name ?? "TBA"}
                         </span>
                         <span className="hidden shrink-0 text-xs text-zinc-600 sm:block">
-                          {formatDate(e.airdate ?? e.airstamp)}
+                          {formatDate(e.airstamp ?? e.airdate, tz)}
                         </span>
                         {hasAired ? (
                           <span className="flex shrink-0 items-center gap-1.5">

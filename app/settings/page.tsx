@@ -1,3 +1,4 @@
+import { TimezoneForm } from "@/components/TimezoneForm";
 import { TmdbKeyForm } from "@/components/TmdbKeyForm";
 import { db } from "@/lib/db";
 import { episodes, shows, watched } from "@/lib/db/schema";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const storedKey = await getSetting("tmdb_key");
+  const storedTz = await getSetting("timezone");
   const envKey = process.env.TMDB_READ_ACCESS_TOKEN ?? process.env.TMDB_API_KEY;
   const savedHint = storedKey ? storedKey.slice(-4) : null;
 
@@ -54,6 +56,19 @@ export default async function SettingsPage() {
             here would take precedence.
           </p>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-zinc-300">Time zone</h2>
+        <p className="text-sm text-zinc-500">
+          Air dates and times are shown in this timezone. Running locally, the server
+          default is usually already yours — but on a hosted deployment (Vercel) the
+          server runs in UTC, so set it explicitly there.
+        </p>
+        <TimezoneForm
+          current={storedTz}
+          serverDefault={Intl.DateTimeFormat().resolvedOptions().timeZone}
+        />
       </section>
 
       <section className="space-y-2">

@@ -3,23 +3,47 @@ export function epCode(season: number, number: number | null): string {
   return `S${season}E${String(number).padStart(2, "0")}`;
 }
 
-export function formatDate(iso: string | null): string {
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * `tz` is the user's IANA timezone from Settings; undefined falls back to the
+ * server's local zone (fine locally, UTC on most hosts).
+ *
+ * Date-only strings ("2026-08-05") are rendered verbatim — parsing them as
+ * UTC midnight and then formatting in a western timezone would shift them
+ * back a day.
+ */
+export function formatDate(iso: string | null, tz?: string): string {
   if (!iso) return "TBA";
-  return new Date(iso).toLocaleDateString("en-US", {
+  const dateOnly = DATE_ONLY.test(iso);
+  return new Date(dateOnly ? `${iso}T00:00:00Z` : iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: dateOnly ? "UTC" : tz,
   });
 }
 
-export function formatDateTime(iso: string | null): string {
+export function formatDateTime(iso: string | null, tz?: string): string {
   if (!iso) return "TBA";
+  if (DATE_ONLY.test(iso)) return formatDate(iso);
   return new Date(iso).toLocaleString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: tz,
+  });
+}
+
+/** Grouping label like "Wednesday, August 5" in the user's timezone. */
+export function dayLabel(iso: string, tz?: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: tz,
   });
 }
 

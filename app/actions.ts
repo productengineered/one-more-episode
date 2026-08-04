@@ -268,3 +268,21 @@ export async function clearTmdbKey() {
   await deleteSetting("tmdb_key");
   revalidateAll();
 }
+
+/** Store the user's IANA timezone; empty string reverts to server default. */
+export async function saveTimezone(tz: string): Promise<{ ok: boolean; error?: string }> {
+  const value = tz.trim();
+  if (!value) {
+    await deleteSetting("timezone");
+    revalidateAll();
+    return { ok: true };
+  }
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+  } catch {
+    return { ok: false, error: "Unknown timezone" };
+  }
+  await setSetting("timezone", value);
+  revalidateAll();
+  return { ok: true };
+}

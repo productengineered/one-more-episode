@@ -14,13 +14,16 @@ export function TrailerButton({
   showName,
   hints,
   size = "md",
+  initialVideos,
 }: {
   showName: string;
   hints: ResolveHints;
   size?: "sm" | "md";
+  /** When provided (show pages pre-check server-side), no click-time fetch happens. */
+  initialVideos?: ShowVideo[];
 }) {
   const [pending, startTransition] = useTransition();
-  const [videos, setVideos] = useState<ShowVideo[] | null>(null); // null = not fetched yet
+  const [videos, setVideos] = useState<ShowVideo[] | null>(initialVideos ?? null); // null = not fetched yet
   const [open, setOpen] = useState(false);
 
   const openModal = () => {
@@ -31,21 +34,41 @@ export function TrailerButton({
     startTransition(async () => {
       const v = await fetchShowVideos(hints);
       setVideos(v);
-      setOpen(true);
+      if (v.length > 0) setOpen(true); // empty -> button becomes "No Trailer" instead
     });
   };
 
   const cls =
     size === "md"
-      ? "rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-sm text-zinc-300 hover:border-zinc-500"
-      : "rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs text-zinc-400 hover:border-zinc-600 hover:text-zinc-200";
+      ? "rounded-lg border px-3 py-1.5 text-sm"
+      : "rounded-md border px-2 py-1 text-xs";
+
+  if (videos !== null && videos.length === 0) {
+    return (
+      <button
+        disabled
+        className={`${cls} cursor-not-allowed border-zinc-800/60 bg-zinc-900/40 text-zinc-600`}
+      >
+        No Trailer
+      </button>
+    );
+  }
+
+  const active =
+    size === "md"
+      ? "border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:border-zinc-500"
+      : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200";
 
   return (
     <>
-      <button onClick={openModal} disabled={pending} className={`${cls} transition-colors disabled:opacity-60`}>
+      <button
+        onClick={openModal}
+        disabled={pending}
+        className={`${cls} ${active} transition-colors disabled:opacity-60`}
+      >
         {pending ? "Loading…" : "▶ Trailer"}
       </button>
-      {open && videos !== null && (
+      {open && videos !== null && videos.length > 0 && (
         <TrailerModal showName={showName} videos={videos} onClose={() => setOpen(false)} />
       )}
     </>

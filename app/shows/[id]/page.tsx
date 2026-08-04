@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { setSeasonWatched, refreshShow } from "@/app/actions";
+import { fetchShowVideos, setSeasonWatched, refreshShow } from "@/app/actions";
 import { UnfollowButton } from "@/components/UnfollowButton";
 import { WatchedButton } from "@/components/WatchedButton";
 import { CatchUpButton } from "@/components/CatchUpButton";
@@ -59,6 +59,14 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
 
   const tmdbConfigured = await isTmdbConfigured();
   const similarShows = tmdbConfigured ? await getSimilarShows(show).catch(() => []) : [];
+  const trailerVideos = tmdbConfigured
+    ? await fetchShowVideos({
+        tmdbId: show.tmdbId,
+        imdbId: show.imdbId,
+        tvdbId: show.tvdbId,
+        tvmazeShowId: show.id,
+      })
+    : [];
   const followedNames = new Set(
     (await db.select({ name: showsTable.name }).from(showsTable)).map((s) =>
       s.name.toLowerCase()
@@ -115,12 +123,8 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
             {tmdbConfigured && (
               <TrailerButton
                 showName={show.name}
-                hints={{
-                  tmdbId: show.tmdbId,
-                  imdbId: show.imdbId,
-                  tvdbId: show.tvdbId,
-                  tvmazeShowId: show.id,
-                }}
+                hints={{}}
+                initialVideos={trailerVideos}
               />
             )}
             {watchedCount < numberedAired.length && (

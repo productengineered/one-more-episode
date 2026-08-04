@@ -19,21 +19,26 @@ export async function isTmdbConfigured(): Promise<boolean> {
   return (await getTmdbCredential()) !== null;
 }
 
-async function getWith<T>(cred: TmdbCredential, path: string): Promise<T> {
+async function getWith<T>(
+  cred: TmdbCredential,
+  path: string,
+  revalidate?: number
+): Promise<T> {
   const sep = path.includes("?") ? "&" : "?";
   const url =
     cred.kind === "v3" ? `${BASE}${path}${sep}api_key=${cred.value}` : `${BASE}${path}`;
   const res = await fetch(url, {
     headers: cred.kind === "bearer" ? { Authorization: `Bearer ${cred.value}` } : {},
+    ...(revalidate ? { next: { revalidate } } : {}),
   });
   if (!res.ok) throw new Error(`TMDB ${path} -> ${res.status}`);
   return (await res.json()) as T;
 }
 
-async function get<T>(path: string): Promise<T> {
+async function get<T>(path: string, revalidate?: number): Promise<T> {
   const cred = await getTmdbCredential();
   if (!cred) throw new Error("TMDB is not configured — add a key in Settings");
-  return getWith<T>(cred, path);
+  return getWith<T>(cred, path, revalidate);
 }
 
 /** True if the credential can authenticate against TMDB. */
@@ -90,7 +95,10 @@ export interface TmdbVideo {
 }
 
 export function getTvVideos(tmdbId: number): Promise<TmdbVideo[]> {
-  return get<{ results: TmdbVideo[] }>(`/tv/${tmdbId}/videos`).then((r) => r.results ?? []);
+  // Cached for a day so show pages can check availability at render time.
+  return get<{ results: TmdbVideo[] }>(`/tv/${tmdbId}/videos`, 86400).then(
+    (r) => r.results ?? []
+  );
 }
 
 export function tmdbPosterUrl(posterPath: string | null, size = "w185"): string | null {

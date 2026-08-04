@@ -8,6 +8,21 @@ export interface FilterOption {
   count: number;
 }
 
+// Pinned to the top of the platform dropdown, in this order (when present in
+// the data — TVmaze's names, e.g. "Apple TV" for Apple TV+).
+const MAJOR_STREAMERS = [
+  "Netflix",
+  "Apple TV",
+  "Prime Video",
+  "Hulu",
+  "HBO",
+  "HBO Max",
+  "Max",
+  "Disney+",
+  "Peacock",
+  "Paramount+",
+];
+
 export interface DiscoverFilterState {
   q: string;
   stage: string; // "" = all, "premieres", "returning"
@@ -125,11 +140,32 @@ export function DiscoverFilters({
           onChange={(e) => setParam("platform", e.target.value)}
         >
           <option value="">All platforms</option>
-          {platforms.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.value} ({o.count})
-            </option>
-          ))}
+          {(() => {
+            const streamers = MAJOR_STREAMERS.map((name) =>
+              platforms.find((p) => p.value === name)
+            ).filter((p): p is FilterOption => !!p);
+            const rest = platforms
+              .filter((p) => !MAJOR_STREAMERS.includes(p.value))
+              .sort((a, b) => a.value.localeCompare(b.value));
+            return (
+              <>
+                <optgroup label="Streaming">
+                  {streamers.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.value} ({o.count})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="─────── A–Z ───────">
+                  {rest.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.value} ({o.count})
+                    </option>
+                  ))}
+                </optgroup>
+              </>
+            );
+          })()}
         </select>
         <select
           className={select}

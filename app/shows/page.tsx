@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { MarkAllButton } from "@/components/MarkAllButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { getAllProgress, type ShowProgress } from "@/lib/queries";
 
@@ -19,11 +20,11 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
   return (
     <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
       {items.map(({ show, airedCount, watchedCount }) => (
-        <li key={show.id}>
-          <Link
-            href={`/shows/${show.id}`}
-            className="group block overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-600"
-          >
+        <li
+          key={show.id}
+          className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-600"
+        >
+          <Link href={`/shows/${show.id}`} className="group block">
             {show.imageMedium ? (
               <Image
                 src={show.imageMedium}
@@ -37,7 +38,7 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
                 {show.name}
               </div>
             )}
-            <div className="space-y-1.5 p-2">
+            <div className="space-y-1.5 p-2 pb-0">
               <p className="truncate text-xs font-medium group-hover:text-violet-300">
                 {show.name}
               </p>
@@ -46,9 +47,14 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
               >
                 {show.status}
               </span>
-              <ProgressBar value={watchedCount} max={airedCount} />
             </div>
           </Link>
+          <div className="space-y-1.5 p-2">
+            <ProgressBar value={watchedCount} max={airedCount} />
+            {watchedCount < airedCount && (
+              <MarkAllButton showId={show.id} remaining={airedCount - watchedCount} />
+            )}
+          </div>
         </li>
       ))}
     </ul>

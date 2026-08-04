@@ -4,6 +4,7 @@ import { setSeasonWatched, refreshShow } from "@/app/actions";
 import { UnfollowButton } from "@/components/UnfollowButton";
 import { WatchedButton } from "@/components/WatchedButton";
 import { CatchUpButton } from "@/components/CatchUpButton";
+import { MarkAllButton } from "@/components/MarkAllButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 import { getShowDetail } from "@/lib/queries";
@@ -96,7 +97,14 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
           <div className="max-w-sm pt-1">
             <ProgressBar value={watchedCount} max={numberedAired.length} />
           </div>
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
+            {watchedCount < numberedAired.length && (
+              <MarkAllButton
+                showId={showId}
+                remaining={numberedAired.length - watchedCount}
+                size="md"
+              />
+            )}
             <form
               action={async () => {
                 "use server";

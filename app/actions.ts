@@ -56,6 +56,23 @@ export async function setSeasonWatched(showId: number, season: number, isWatched
   revalidateAll();
 }
 
+/** Mark every aired, numbered episode of a show as watched. */
+export async function markShowWatched(showId: number) {
+  const now = new Date().toISOString();
+  const eps = await db
+    .select({ id: episodes.id })
+    .from(episodes)
+    .where(
+      and(eq(episodes.showId, showId), isNotNull(episodes.number), lte(episodes.airstamp, now))
+    );
+  if (!eps.length) return;
+  await db
+    .insert(watched)
+    .values(eps.map((e) => ({ episodeId: e.id, showId, watchedAt: now })))
+    .onConflictDoNothing();
+  revalidateAll();
+}
+
 /** "Catch up": mark this episode and everything before it (aired, numbered) watched. */
 export async function markWatchedUpTo(episodeId: number) {
   const target = await db.select().from(episodes).where(eq(episodes.id, episodeId)).limit(1);

@@ -51,11 +51,15 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
 });
 
-// Upcoming series premieres (S1E1s from TVmaze's full schedule feed), refreshed on demand.
-export const premieres = sqliteTable("premieres", {
+// Every English-language show with an upcoming episode (from TVmaze's full
+// schedule feed) — powers the Discover tab. isPremiere marks S1E1s.
+export const airing = sqliteTable("airing", {
   showId: integer("show_id").primaryKey(), // TVmaze show id
   name: text("name").notNull(),
-  premiereAt: text("premiere_at").notNull(),
+  nextAirAt: text("next_air_at").notNull(),
+  season: integer("season"),
+  number: integer("number"),
+  isPremiere: integer("is_premiere").notNull().default(0),
   network: text("network"),
   showType: text("show_type"),
   genres: text("genres"), // JSON array
@@ -100,5 +104,5 @@ export const watched = sqliteTable(
 export type Show = typeof shows.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
 export type Watched = typeof watched.$inferSelect;
-export type Premiere = typeof premieres.$inferSelect;
+export type AiringShow = typeof airing.$inferSelect;
 export type SimilarShow = typeof similar.$inferSelect;

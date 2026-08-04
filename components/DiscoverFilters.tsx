@@ -1,21 +1,24 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 export interface FilterOption {
   value: string;
   count: number;
 }
 
-export interface PremiereFilterState {
-  sort: string;
+export interface DiscoverFilterState {
+  q: string;
+  stage: string; // "" = all, "premieres", "returning"
+  sort: string; // "" = by date, "buzz"
   type: string;
   platform: string;
   genre: string;
   country: string;
 }
 
-export function PremiereFilters({
+export function DiscoverFilters({
   types,
   platforms,
   genres,
@@ -26,19 +29,39 @@ export function PremiereFilters({
   platforms: FilterOption[];
   genres: FilterOption[];
   countries: FilterOption[];
-  current: PremiereFilterState;
+  current: DiscoverFilterState;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [q, setQ] = useState(current.q);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function setParam(key: string, value: string) {
+  useEffect(() => () => {
+    if (debounce.current) clearTimeout(debounce.current);
+  }, []);
+
+  function withParam(key: string, value: string) {
     const p = new URLSearchParams(searchParams);
     if (value) p.set(key, value);
     else p.delete(key);
-    router.push(`/premieres${p.size ? `?${p.toString()}` : ""}`, { scroll: false });
+    return `/discover${p.size ? `?${p.toString()}` : ""}`;
   }
 
-  const hasFilters = current.type || current.platform || current.genre || current.country;
+  function setParam(key: string, value: string) {
+    router.push(withParam(key, value), { scroll: false });
+  }
+
+  function onSearch(value: string) {
+    setQ(value);
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(
+      () => router.replace(withParam("q", value.trim()), { scroll: false }),
+      300
+    );
+  }
+
+  const hasFilters =
+    current.q || current.stage || current.type || current.platform || current.genre || current.country;
 
   const chip = (active: boolean) =>
     `rounded-full px-3 py-1 text-xs transition-colors ${
@@ -47,10 +70,46 @@ export function PremiereFilters({
         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200"
     }`;
   const select =
-    "rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-500";
+    "max-w-44 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-500";
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Filter by name…"
+          className="w-48 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none placeholder:text-zinc-600 focus:border-violet-500"
+        />
+        <span className="mx-1 h-4 w-px bg-zinc-800" />
+        <button className={chip(!current.stage)} onClick={() => setParam("stage", "")}>
+          All shows
+        </button>
+        <button
+          className={chip(current.stage === "premieres")}
+          onClick={() => setParam("stage", current.stage === "premieres" ? "" : "premieres")}
+        >
+          ✦ Premieres
+        </button>
+        <button
+          className={chip(current.stage === "returning")}
+          onClick={() => setParam("stage", current.stage === "returning" ? "" : "returning")}
+        >
+          Returning
+        </button>
+        {hasFilters && (
+          <button
+            onClick={() => {
+              setQ("");
+              router.push("/discover", { scroll: false });
+            }}
+            className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-zinc-600">Sort</span>
         <button className={chip(current.sort !== "buzz")} onClick={() => setParam("sort", "")}>
@@ -96,14 +155,6 @@ export function PremiereFilters({
             </option>
           ))}
         </select>
-        {hasFilters && (
-          <button
-            onClick={() => router.push("/premieres", { scroll: false })}
-            className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
-          >
-            Clear
-          </button>
-        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-zinc-600">Type</span>

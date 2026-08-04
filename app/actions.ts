@@ -3,7 +3,7 @@
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { episodes, premieres, shows, watched } from "@/lib/db/schema";
+import { airing, episodes, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
 import { deleteSetting, setSetting } from "@/lib/settings";
 import { getTvExternalIds, validateCredential } from "@/lib/tmdb";
@@ -125,28 +125,33 @@ export async function refreshStaleShows() {
 }
 
 /**
- * Rebuild the premieres table from TVmaze's full future-schedule feed:
- * S1E1s of English-language shows airing in the next 90 days.
+ * Rebuild the airing table from TVmaze's full future-schedule feed: every
+ * English-language show with an episode in the next 90 days, keeping each
+ * show's earliest upcoming episode. S1E1 earliest = a series premiere.
  */
-export async function refreshPremieres() {
+export async function refreshAiring() {
   const items = await getFullSchedule();
   const now = Date.now();
   const horizon = now + 90 * 86400_000;
   const fetchedAt = new Date().toISOString();
 
-  const byShow = new Map<number, typeof premieres.$inferInsert>();
+  const byShow = new Map<number, typeof airing.$inferInsert>();
   for (const it of items) {
-    if (it.season !== 1 || it.number !== 1) continue;
     const show = it.show ?? it._embedded?.show;
     if (!show || show.language !== "English") continue;
-    const premiereAt = it.airstamp ?? (it.airdate ? `${it.airdate}T00:00:00Z` : null);
-    if (!premiereAt) continue;
-    const t = Date.parse(premiereAt);
+    const nextAirAt = it.airstamp ?? (it.airdate ? `${it.airdate}T00:00:00Z` : null);
+    if (!nextAirAt) continue;
+    const t = Date.parse(nextAirAt);
     if (!Number.isFinite(t) || t < now - 86400_000 || t > horizon) continue;
+    const prev = byShow.get(show.id);
+    if (prev && Date.parse(prev.nextAirAt) <= t) continue;
     byShow.set(show.id, {
       showId: show.id,
       name: show.name,
-      premiereAt,
+      nextAirAt,
+      season: it.season ?? null,
+      number: it.number ?? null,
+      isPremiere: it.season === 1 && it.number === 1 ? 1 : 0,
       network: show.network?.name ?? show.webChannel?.name ?? null,
       showType: show.type ?? null,
       genres: JSON.stringify(show.genres ?? []),
@@ -160,9 +165,9 @@ export async function refreshPremieres() {
   }
 
   const rows = [...byShow.values()];
-  await db.delete(premieres);
+  await db.delete(airing);
   for (let i = 0; i < rows.length; i += 50) {
-    await db.insert(premieres).values(rows.slice(i, i + 50));
+    await db.insert(airing).values(rows.slice(i, i + 50));
   }
   revalidateAll();
   return { count: rows.length };

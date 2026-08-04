@@ -1,22 +1,24 @@
 import Image from "next/image";
 import { asc, inArray } from "drizzle-orm";
-import { refreshPremieres } from "@/app/actions";
+import { refreshAiring } from "@/app/actions";
+import { DiscoverFilters, type FilterOption } from "@/components/DiscoverFilters";
 import { FollowButton } from "@/components/FollowButton";
-import { PremiereFilters, type FilterOption } from "@/components/PremiereFilters";
-import { RefreshPremieresButton } from "@/components/RefreshPremieresButton";
+import { RefreshAiringButton } from "@/components/RefreshAiringButton";
 import { db } from "@/lib/db";
-import { premieres, shows, type Premiere } from "@/lib/db/schema";
-import { formatDateTime, relativeDays, stripHtml } from "@/lib/format";
+import { airing, shows, type AiringShow } from "@/lib/db/schema";
+import { epCode, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-async function loadPremieres() {
-  let rows = await db.select().from(premieres).orderBy(asc(premieres.premiereAt));
+const RENDER_CAP = 200;
+
+async function loadAiring() {
+  let rows = await db.select().from(airing).orderBy(asc(airing.nextAirAt));
   if (!rows.length) {
     // First visit: build the table inline (one big TVmaze request, a few seconds).
     try {
-      await refreshPremieres();
-      rows = await db.select().from(premieres).orderBy(asc(premieres.premiereAt));
+      await refreshAiring();
+      rows = await db.select().from(airing).orderBy(asc(airing.nextAirAt));
     } catch {
       // offline — page renders its empty state
     }
@@ -24,7 +26,7 @@ async function loadPremieres() {
   return rows;
 }
 
-function options(rows: Premiere[], pick: (p: Premiere) => string[]): FilterOption[] {
+function options(rows: AiringShow[], pick: (p: AiringShow) => string[]): FilterOption[] {
   const counts = new Map<string, number>();
   for (const p of rows) {
     for (const v of pick(p)) counts.set(v, (counts.get(v) ?? 0) + 1);
@@ -34,30 +36,42 @@ function options(rows: Premiere[], pick: (p: Premiere) => string[]): FilterOptio
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
 
-function parseGenres(p: Premiere): string[] {
+function parseGenres(p: AiringShow): string[] {
   return p.genres ? JSON.parse(p.genres) : [];
 }
 
-export default async function PremieresPage({ searchParams }: PageProps<"/premieres">) {
+export default async function DiscoverPage({ searchParams }: PageProps<"/discover">) {
   const sp = await searchParams;
+  const get = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
   const current = {
-    sort: typeof sp.sort === "string" ? sp.sort : "",
-    type: typeof sp.type === "string" ? sp.type : "",
-    platform: typeof sp.platform === "string" ? sp.platform : "",
-    genre: typeof sp.genre === "string" ? sp.genre : "",
-    country: typeof sp.country === "string" ? sp.country : "",
+    q: get("q"),
+    stage: get("stage"),
+    sort: get("sort"),
+    type: get("type"),
+    platform: get("platform"),
+    genre: get("genre"),
+    country: get("country"),
   };
 
-  const rows = await loadPremieres();
-  const upcoming = rows.filter((p) => Date.parse(p.premiereAt) > Date.now() - 86400_000);
+  const rows = await loadAiring();
+  const upcoming = rows.filter((p) => Date.parse(p.nextAirAt) > Date.now() - 86400_000);
 
   let filtered = upcoming;
+  if (current.q) {
+    const q = current.q.toLowerCase();
+    filtered = filtered.filter((p) => p.name.toLowerCase().includes(q));
+  }
+  if (current.stage === "premieres") filtered = filtered.filter((p) => p.isPremiere);
+  if (current.stage === "returning") filtered = filtered.filter((p) => !p.isPremiere);
   if (current.platform) filtered = filtered.filter((p) => p.network === current.platform);
   if (current.type) filtered = filtered.filter((p) => p.showType === current.type);
   if (current.genre) filtered = filtered.filter((p) => parseGenres(p).includes(current.genre));
   if (current.country)
     filtered = filtered.filter((p) => (p.country ?? "Global") === current.country);
   if (current.sort === "buzz") filtered = [...filtered].sort((a, b) => b.weight - a.weight);
+
+  const total = filtered.length;
+  filtered = filtered.slice(0, RENDER_CAP);
 
   const followedIds = new Set<number>(
     filtered.length
@@ -71,12 +85,12 @@ export default async function PremieresPage({ searchParams }: PageProps<"/premie
   );
 
   // Group by date only when date-sorted; buzz sort renders one flat list.
-  const groups = new Map<string | null, Premiere[]>();
+  const groups = new Map<string | null, AiringShow[]>();
   if (current.sort === "buzz") {
     groups.set(null, filtered);
   } else {
     for (const p of filtered) {
-      const key = new Date(p.premiereAt).toLocaleDateString("en-US", {
+      const key = new Date(p.nextAirAt).toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -92,16 +106,16 @@ export default async function PremieresPage({ searchParams }: PageProps<"/premie
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">New show premieres</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Discover</h1>
           <p className="text-sm text-zinc-500">
-            English-language series premiering in the next 90 days
-            {fetchedAt && ` · updated ${relativeAge(fetchedAt)}`}
+            {upcoming.length.toLocaleString()} English-language shows airing in the next 90
+            days{fetchedAt && ` · updated ${relativeAge(fetchedAt)}`}
           </p>
         </div>
-        <RefreshPremieresButton />
+        <RefreshAiringButton />
       </div>
 
-      <PremiereFilters
+      <DiscoverFilters
         types={options(upcoming, (p) => (p.showType ? [p.showType] : []))}
         platforms={options(upcoming, (p) => (p.network ? [p.network] : []))}
         genres={options(upcoming, parseGenres)}
@@ -109,11 +123,18 @@ export default async function PremieresPage({ searchParams }: PageProps<"/premie
         current={current}
       />
 
-      {filtered.length === 0 && (
+      {total > RENDER_CAP && (
+        <p className="text-xs text-zinc-600">
+          Showing the first {RENDER_CAP} of {total.toLocaleString()} matches — narrow the
+          filters to see the rest.
+        </p>
+      )}
+
+      {total === 0 && (
         <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 text-zinc-400">
           {upcoming.length === 0
-            ? "No premiere data yet — hit “Refresh premieres”."
-            : "No premieres match these filters."}
+            ? "No schedule data yet — hit “Refresh”."
+            : "Nothing matches these filters."}
         </p>
       )}
 
@@ -123,15 +144,15 @@ export default async function PremieresPage({ searchParams }: PageProps<"/premie
             <h2 className="mb-2 flex items-baseline gap-2 text-sm font-semibold text-zinc-300">
               {date}
               <span className="font-normal text-zinc-600">
-                {relativeDays(items[0].premiereAt)}
+                {relativeDays(items[0].nextAirAt)}
               </span>
             </h2>
           )}
           <ul className="grid gap-3 sm:grid-cols-2">
             {items.map((p) => (
-              <PremiereCard
+              <AiringCard
                 key={p.showId}
-                premiere={p}
+                item={p}
                 following={followedIds.has(p.showId)}
                 showBuzz={current.sort === "buzz"}
               />
@@ -143,12 +164,12 @@ export default async function PremieresPage({ searchParams }: PageProps<"/premie
   );
 }
 
-function PremiereCard({
-  premiere: p,
+function AiringCard({
+  item: p,
   following,
   showBuzz,
 }: {
-  premiere: Premiere;
+  item: AiringShow;
   following: boolean;
   showBuzz: boolean;
 }) {
@@ -168,7 +189,14 @@ function PremiereCard({
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
-          <p className="truncate font-medium">{p.name}</p>
+          <p className="truncate font-medium">
+            {p.name}
+            {p.isPremiere === 1 && (
+              <span className="ml-2 rounded-full bg-violet-600/20 px-1.5 py-px text-[10px] font-semibold text-violet-300">
+                ✦ PREMIERE
+              </span>
+            )}
+          </p>
           {following ? (
             <span className="shrink-0 rounded-lg bg-emerald-500/15 px-2 py-1 text-xs text-emerald-400">
               ✓ Following
@@ -182,7 +210,10 @@ function PremiereCard({
         </p>
         <p className="line-clamp-2 pt-1 text-sm text-zinc-400">{stripHtml(p.summary)}</p>
         <p className="pt-1 text-xs text-zinc-600">
-          {formatDateTime(p.premiereAt)}
+          {p.season !== null && p.number !== null && (
+            <span className="mr-2 font-mono">{epCode(p.season, p.number)}</span>
+          )}
+          {formatDateTime(p.nextAirAt)}
           {showBuzz && ` · buzz ${p.weight}`}
         </p>
       </div>

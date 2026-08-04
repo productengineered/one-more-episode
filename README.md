@@ -20,8 +20,10 @@ episodes (and brand-new series) are coming.
 - **Watch Next** — the next unwatched episode of every show you're behind on,
   with progress bars and one-tap "watched"
 - **Upcoming** — future air dates for your shows, grouped by day
-- **Premieres** — brand-new series premiering in the next 90 days, with
-  platform / type / genre / country filters and a popularity sort
+- **Discover** — every English-language show airing in the next 90 days,
+  filterable by platform (all of Apple TV+, HBO, Netflix… at a glance), name,
+  type, genre, and country, with premieres/returning toggles and a popularity
+  sort
 - **Shows** — your library with per-show progress, season-level and
   mark-all-watched actions, episode lists, auto-refreshing air dates
 - **Add** — search and follow any show

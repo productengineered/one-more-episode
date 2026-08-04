@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "image.tmdb.org" },
     ],
   },
+  async redirects() {
+    return [{ source: "/premieres", destination: "/discover", permanent: false }];
+  },
 };
 
 export default nextConfig;

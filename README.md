@@ -29,6 +29,8 @@ episodes (and brand-new series) are coming.
 - **Add** — search and follow any show
 - **Similar** *(with TMDB key)* — "more like this" on every show page and
   from search results, followable in one click
+- **Trailers** *(with TMDB key)* — in-app trailer/teaser playback in a modal,
+  on show pages and Discover cards
 - Installable as a PWA; dark UI
 
 ## Quick start (local)

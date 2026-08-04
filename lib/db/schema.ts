@@ -56,6 +56,8 @@ export const settings = sqliteTable("settings", {
 export const airing = sqliteTable("airing", {
   showId: integer("show_id").primaryKey(), // TVmaze show id
   name: text("name").notNull(),
+  imdbId: text("imdb_id"), // for TMDB resolution (trailers)
+  tvdbId: integer("tvdb_id"),
   nextAirAt: text("next_air_at").notNull(),
   season: integer("season"),
   number: integer("number"),

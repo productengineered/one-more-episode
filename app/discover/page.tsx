@@ -7,6 +7,8 @@ import { RefreshAiringButton } from "@/components/RefreshAiringButton";
 import { db } from "@/lib/db";
 import { airing, shows, type AiringShow } from "@/lib/db/schema";
 import { epCode, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
+import { isTmdbConfigured } from "@/lib/tmdb";
+import { TrailerButton } from "@/components/TrailerButton";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
   };
 
   const rows = await loadAiring();
+  const tmdbConfigured = await isTmdbConfigured();
   const upcoming = rows.filter((p) => Date.parse(p.nextAirAt) > Date.now() - 86400_000);
 
   let filtered = upcoming;
@@ -155,6 +158,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                 item={p}
                 following={followedIds.has(p.showId)}
                 showBuzz={current.sort === "buzz"}
+                trailers={tmdbConfigured}
               />
             ))}
           </ul>
@@ -168,10 +172,12 @@ function AiringCard({
   item: p,
   following,
   showBuzz,
+  trailers,
 }: {
   item: AiringShow;
   following: boolean;
   showBuzz: boolean;
+  trailers: boolean;
 }) {
   const genres = parseGenres(p);
   return (
@@ -209,13 +215,22 @@ function AiringCard({
           {[p.network, p.showType, genres.slice(0, 3).join(" · ")].filter(Boolean).join("  ·  ")}
         </p>
         <p className="line-clamp-2 pt-1 text-sm text-zinc-400">{stripHtml(p.summary)}</p>
-        <p className="pt-1 text-xs text-zinc-600">
-          {p.season !== null && p.number !== null && (
-            <span className="mr-2 font-mono">{epCode(p.season, p.number)}</span>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <p className="min-w-0 truncate text-xs text-zinc-600">
+            {p.season !== null && p.number !== null && (
+              <span className="mr-2 font-mono">{epCode(p.season, p.number)}</span>
+            )}
+            {formatDateTime(p.nextAirAt)}
+            {showBuzz && ` · buzz ${p.weight}`}
+          </p>
+          {trailers && (
+            <TrailerButton
+              showName={p.name}
+              hints={{ imdbId: p.imdbId, tvdbId: p.tvdbId }}
+              size="sm"
+            />
           )}
-          {formatDateTime(p.nextAirAt)}
-          {showBuzz && ` · buzz ${p.weight}`}
-        </p>
+        </div>
       </div>
     </li>
   );

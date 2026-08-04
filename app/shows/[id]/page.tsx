@@ -6,6 +6,7 @@ import { UnfollowButton } from "@/components/UnfollowButton";
 import { WatchedButton } from "@/components/WatchedButton";
 import { CatchUpButton } from "@/components/CatchUpButton";
 import { MarkAllButton } from "@/components/MarkAllButton";
+import { TrailerButton } from "@/components/TrailerButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SimilarGrid } from "@/components/SimilarGrid";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
@@ -111,6 +112,17 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
             <ProgressBar value={watchedCount} max={numberedAired.length} />
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
+            {tmdbConfigured && (
+              <TrailerButton
+                showName={show.name}
+                hints={{
+                  tmdbId: show.tmdbId,
+                  imdbId: show.imdbId,
+                  tvdbId: show.tvdbId,
+                  tvmazeShowId: show.id,
+                }}
+              />
+            )}
             {watchedCount < numberedAired.length && (
               <MarkAllButton
                 showId={showId}

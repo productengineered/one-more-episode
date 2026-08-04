@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { airing, episodes, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
 import { deleteSetting, setSetting } from "@/lib/settings";
-import { getTvExternalIds, validateCredential } from "@/lib/tmdb";
+import { findTvByExternal, getTvExternalIds, getTvVideos, validateCredential } from "@/lib/tmdb";
 import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/tvmaze";
 
 function revalidateAll() {
@@ -148,6 +148,8 @@ export async function refreshAiring() {
     byShow.set(show.id, {
       showId: show.id,
       name: show.name,
+      imdbId: show.externals?.imdb ?? null,
+      tvdbId: show.externals?.thetvdb ?? null,
       nextAirAt,
       season: it.season ?? null,
       number: it.number ?? null,
@@ -205,6 +207,46 @@ export async function unfollowShow(showId: number) {
 
 export async function searchAction(query: string) {
   return searchShows(query);
+}
+
+export interface ShowVideo {
+  key: string; // YouTube video id
+  name: string;
+  type: string;
+  official: boolean;
+}
+
+/** YouTube videos for a show (trailers first), resolved via TMDB. */
+export async function fetchShowVideos(input: {
+  tmdbId?: number | null;
+  imdbId?: string | null;
+  tvdbId?: number | null;
+  /** When set, the resolved TMDB id is cached on this library show. */
+  tvmazeShowId?: number | null;
+}): Promise<ShowVideo[]> {
+  try {
+    let tmdbId = input.tmdbId ?? null;
+    if (!tmdbId) {
+      tmdbId = await findTvByExternal({ imdbId: input.imdbId, tvdbId: input.tvdbId });
+      if (tmdbId && input.tvmazeShowId) {
+        await db.update(shows).set({ tmdbId }).where(eq(shows.id, input.tvmazeShowId));
+      }
+    }
+    if (!tmdbId) return [];
+    const rank = (t: string) =>
+      ({ Trailer: 0, Teaser: 1, Featurette: 2, Clip: 3 } as Record<string, number>)[t] ?? 4;
+    return (await getTvVideos(tmdbId))
+      .filter((v) => v.site === "YouTube")
+      .sort(
+        (a, b) =>
+          rank(a.type) - rank(b.type) ||
+          Number(b.official) - Number(a.official) ||
+          (b.published_at ?? "").localeCompare(a.published_at ?? "")
+      )
+      .map((v) => ({ key: v.key, name: v.name, type: v.type, official: v.official }));
+  } catch {
+    return [];
+  }
 }
 
 /** Validate and store a TMDB credential (v4 read token or v3 API key). */

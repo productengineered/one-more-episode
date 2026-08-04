@@ -80,6 +80,19 @@ export function getTvExternalIds(
   return get(`/tv/${tmdbId}/external_ids`);
 }
 
+export interface TmdbVideo {
+  key: string;
+  site: string;
+  type: string; // Trailer | Teaser | Featurette | Clip | ...
+  name: string;
+  official: boolean;
+  published_at: string | null;
+}
+
+export function getTvVideos(tmdbId: number): Promise<TmdbVideo[]> {
+  return get<{ results: TmdbVideo[] }>(`/tv/${tmdbId}/videos`).then((r) => r.results ?? []);
+}
+
 export function tmdbPosterUrl(posterPath: string | null, size = "w185"): string | null {
   return posterPath ? `https://image.tmdb.org/t/p/${size}${posterPath}` : null;
 }

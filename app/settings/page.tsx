@@ -1,5 +1,7 @@
+import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 import { SignOutButton } from "@/components/SignOutButton";
 import { TimezoneForm } from "@/components/TimezoneForm";
+import { authEnabled } from "@/lib/auth";
 import { TmdbKeyForm } from "@/components/TmdbKeyForm";
 import { db } from "@/lib/db";
 import { episodes, shows, watched } from "@/lib/db/schema";
@@ -72,13 +74,14 @@ export default async function SettingsPage() {
         />
       </section>
 
-      {process.env.APP_PASSWORD && (
+      {authEnabled() && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-zinc-300">Account</h2>
           <p className="text-sm text-zinc-500">
-            Login is enabled (set via the <code className="rounded bg-zinc-900 px-1">APP_PASSWORD</code>{" "}
-            environment variable). Changing the password signs out all sessions.
+            Login is enabled. Devices that are already signed in stay signed in until
+            their session expires or they sign out.
           </p>
+          <ChangePasswordForm />
           <SignOutButton />
         </section>
       )}

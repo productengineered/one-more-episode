@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { NavLinks } from "@/components/NavLinks";
 import { ScrollMemory } from "@/components/ScrollMemory";
+import { isAuthenticated } from "@/lib/auth-server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,8 @@ export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const authed = await isAuthenticated();
   return (
     <html
       lang="en"
@@ -44,14 +46,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>
               One More Episode
             </Link>
-            <NavLinks />
-            <Link
-              href="/settings"
-              aria-label="Settings"
-              className="ml-auto grid h-10 w-10 place-items-center rounded-full text-2xl text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-            >
-              ⚙
-            </Link>
+            {authed && <NavLinks />}
+            {authed && (
+              <Link
+                href="/settings"
+                aria-label="Settings"
+                className="ml-auto grid h-10 w-10 place-items-center rounded-full text-2xl text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+              >
+                ⚙
+              </Link>
+            )}
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>

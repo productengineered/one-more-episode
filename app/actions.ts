@@ -3,7 +3,8 @@
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE, sessionToken } from "@/lib/auth";
+import { authEnabled, SESSION_COOKIE, sessionToken, sha256Hex } from "@/lib/auth";
+import { getStoredPasswordHash, isAuthenticated } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 import { airing, episodes, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
@@ -271,10 +272,7 @@ export async function clearTmdbKey() {
   revalidateAll();
 }
 
-export async function login(password: string): Promise<{ ok: boolean }> {
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) return { ok: true }; // auth disabled
-  if (password !== expected) return { ok: false };
+async function setSessionCookie() {
   const token = await sessionToken();
   (await cookies()).set(SESSION_COOKIE, token!, {
     httpOnly: true,
@@ -283,6 +281,29 @@ export async function login(password: string): Promise<{ ok: boolean }> {
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
   });
+}
+
+export async function login(password: string): Promise<{ ok: boolean; error?: string }> {
+  if (!authEnabled()) return { ok: true };
+  const stored = await getStoredPasswordHash();
+  if (!stored) {
+    // First run: this visit creates the password.
+    if (password.length < 6) return { ok: false, error: "Use at least 6 characters" };
+    await setSetting("app_password_hash", await sha256Hex(password));
+    await setSessionCookie();
+    return { ok: true };
+  }
+  if ((await sha256Hex(password)) !== stored) return { ok: false, error: "Wrong password" };
+  await setSessionCookie();
+  return { ok: true };
+}
+
+export async function changePassword(
+  newPassword: string
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAuthenticated())) return { ok: false, error: "Not signed in" };
+  if (newPassword.length < 6) return { ok: false, error: "Use at least 6 characters" };
+  await setSetting("app_password_hash", await sha256Hex(newPassword));
   return { ok: true };
 }
 

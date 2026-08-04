@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { inArray } from "drizzle-orm";
-import { followShow } from "@/app/actions";
+import { FollowButton } from "@/components/FollowButton";
 import { db } from "@/lib/db";
 import { shows } from "@/lib/db/schema";
 import { stripHtml } from "@/lib/format";
@@ -93,16 +93,7 @@ export default async function AddPage({ searchParams }: PageProps<"/add">) {
                     ✓ Following
                   </span>
                 ) : (
-                  <form
-                    action={async () => {
-                      "use server";
-                      await followShow(show.id);
-                    }}
-                  >
-                    <button className="rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500">
-                      + Follow
-                    </button>
-                  </form>
+                  <FollowButton tvmazeId={show.id} />
                 )}
               </div>
             </li>

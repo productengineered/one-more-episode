@@ -56,20 +56,14 @@ export async function syncShow(tvmazeId: number, extra?: { followedAt?: string |
       set: { ...sv, followedAt: undefined } as Partial<typeof sv>,
     });
 
+  // Replace the show's episodes wholesale in chunked bulk inserts — episode ids
+  // are stable TVmaze ids, so watched rows keep pointing at the right episodes.
+  // (Per-row upserts made following a long-running show take seconds.)
   const eps = s._embedded?.episodes ?? [];
-  for (const e of eps) {
-    const ev = episodeValues(s.id, e);
-    await db.insert(episodes).values(ev).onConflictDoUpdate({ target: episodes.id, set: ev });
-  }
-
-  // Drop episodes TVmaze no longer lists (renumbered/removed), so ordering stays correct.
-  const keep = new Set(eps.map((e) => e.id));
-  const existing = await db
-    .select({ id: episodes.id })
-    .from(episodes)
-    .where(eq(episodes.showId, s.id));
-  for (const row of existing) {
-    if (!keep.has(row.id)) await db.delete(episodes).where(eq(episodes.id, row.id));
+  const rows = eps.map((e) => episodeValues(s.id, e));
+  await db.delete(episodes).where(eq(episodes.showId, s.id));
+  for (let i = 0; i < rows.length; i += 100) {
+    await db.insert(episodes).values(rows.slice(i, i + 100));
   }
 
   return { show: s, episodeCount: eps.length };

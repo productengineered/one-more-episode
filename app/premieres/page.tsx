@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { asc, inArray } from "drizzle-orm";
-import { followShow, refreshPremieres } from "@/app/actions";
+import { refreshPremieres } from "@/app/actions";
+import { FollowButton } from "@/components/FollowButton";
 import { PremiereFilters, type FilterOption } from "@/components/PremiereFilters";
 import { RefreshPremieresButton } from "@/components/RefreshPremieresButton";
 import { db } from "@/lib/db";
@@ -173,16 +174,7 @@ function PremiereCard({
               ✓ Following
             </span>
           ) : (
-            <form
-              action={async () => {
-                "use server";
-                await followShow(p.showId);
-              }}
-            >
-              <button className="shrink-0 rounded-lg bg-violet-600 px-2 py-1 text-xs font-medium text-white hover:bg-violet-500">
-                + Follow
-              </button>
-            </form>
+            <FollowButton tvmazeId={p.showId} />
           )}
         </div>
         <p className="truncate text-xs text-zinc-500">

@@ -4,7 +4,10 @@ Personal TV show tracker — a self-hosted replacement for TV Time. Follows show
 tracks watched episodes, and shows upcoming air dates.
 
 - **Stack**: Next.js (App Router) · Drizzle ORM · libSQL/SQLite · Tailwind
-- **Data source**: [TVmaze API](https://www.tvmaze.com/api) (free, no API key)
+- **Data sources**: [TVmaze API](https://www.tvmaze.com/api) (free, no API key) for
+  shows/episodes/schedules; [TMDB](https://www.themoviedb.org) for "shows like this"
+  recommendations — set `TMDB_READ_ACCESS_TOKEN` (and optionally `TMDB_API_KEY`)
+  in `.env.local` (remember these on Vercel too)
 - **Database**: local file at `data/tv.db`. For Vercel, point `DATABASE_URL`
   (+ `DATABASE_AUTH_TOKEN`) at a [Turso](https://turso.tech) database — no code
   changes needed.
@@ -26,7 +29,9 @@ npm run build      # production build
   schedule feed), with platform/type/genre/country filters and a popularity sort
 - **/shows** — poster grid of everything you follow, with progress
 - **/shows/[id]** — seasons and episodes, watched toggles, refresh, unfollow
-- **/add** — search TVmaze and follow new shows
+- **/add** — search TVmaze and follow new shows, with a "shows like this" link per result
+- **/similar** — TMDB recommendations for any show, followable in one click; the same
+  grid appears as "More like this" on show detail pages (cached 30 days per show)
 
 Show data refreshes automatically when you open a show that hasn't synced in
 24h (ended shows are skipped), or in bulk via "Refresh air dates" on Upcoming.

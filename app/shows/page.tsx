@@ -22,6 +22,7 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
       {items.map(({ show, airedCount, watchedCount }) => (
         <li
           key={show.id}
+          data-scroll-anchor={`show-${show.id}`}
           className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-600"
         >
           <Link href={`/shows/${show.id}`} className="group block">

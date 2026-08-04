@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Suspense } from "react";
 import "./globals.css";
 import { NavLinks } from "@/components/NavLinks";
+import { ScrollMemory } from "@/components/ScrollMemory";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +48,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+        <Suspense fallback={null}>
+          <ScrollMemory />
+        </Suspense>
       </body>
     </html>
   );

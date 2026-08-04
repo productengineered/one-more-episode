@@ -51,6 +51,7 @@ export default async function UpcomingPage() {
             {items.map(({ show, episode }) => (
               <li
                 key={episode.id}
+                data-scroll-anchor={`episode-${episode.id}`}
                 className="flex items-center gap-3 border-b border-zinc-800/60 p-3 last:border-0"
               >
                 <Link href={`/shows/${show.id}`} className="shrink-0">

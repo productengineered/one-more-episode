@@ -46,6 +46,7 @@ export default async function WatchNextPage() {
           return (
             <li
               key={show.id}
+              data-scroll-anchor={`show-${show.id}`}
               className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 transition-colors hover:border-zinc-700"
             >
               <Link href={`/shows/${show.id}`} className="shrink-0">

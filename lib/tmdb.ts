@@ -1,5 +1,8 @@
 // Minimal TMDB client, used for "shows like this" recommendations.
-// Auth: v4 read access token as a Bearer header.
+// Credentials come from the Settings page (or env vars) and may be either a
+// v4 read access token (Bearer header) or a classic v3 API key (query param).
+
+import { getTmdbCredential, type TmdbCredential } from "./settings";
 
 const BASE = "https://api.themoviedb.org/3";
 
@@ -12,14 +15,35 @@ export interface TmdbTvSummary {
   vote_average: number | null;
 }
 
-async function get<T>(path: string): Promise<T> {
-  const token = process.env.TMDB_READ_ACCESS_TOKEN;
-  if (!token) throw new Error("TMDB_READ_ACCESS_TOKEN is not set");
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+export async function isTmdbConfigured(): Promise<boolean> {
+  return (await getTmdbCredential()) !== null;
+}
+
+async function getWith<T>(cred: TmdbCredential, path: string): Promise<T> {
+  const sep = path.includes("?") ? "&" : "?";
+  const url =
+    cred.kind === "v3" ? `${BASE}${path}${sep}api_key=${cred.value}` : `${BASE}${path}`;
+  const res = await fetch(url, {
+    headers: cred.kind === "bearer" ? { Authorization: `Bearer ${cred.value}` } : {},
   });
   if (!res.ok) throw new Error(`TMDB ${path} -> ${res.status}`);
   return (await res.json()) as T;
+}
+
+async function get<T>(path: string): Promise<T> {
+  const cred = await getTmdbCredential();
+  if (!cred) throw new Error("TMDB is not configured — add a key in Settings");
+  return getWith<T>(cred, path);
+}
+
+/** True if the credential can authenticate against TMDB. */
+export async function validateCredential(cred: TmdbCredential): Promise<boolean> {
+  try {
+    await getWith(cred, "/configuration");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Resolve a TMDB TV id from an IMDB or TVDB id. */

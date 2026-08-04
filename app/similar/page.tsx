@@ -3,6 +3,7 @@ import { SimilarGrid } from "@/components/SimilarGrid";
 import { db } from "@/lib/db";
 import { shows } from "@/lib/db/schema";
 import { fetchSimilarByExternal } from "@/lib/similar";
+import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,23 @@ export default async function SimilarPage({ searchParams }: PageProps<"/similar"
   const name = typeof sp.name === "string" ? sp.name : "";
   const imdbId = typeof sp.imdb === "string" && sp.imdb ? sp.imdb : null;
   const tvdbId = typeof sp.tvdb === "string" && sp.tvdb ? Number(sp.tvdb) : null;
+
+  if (!(await isTmdbConfigured())) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Shows like {name || "that"}
+        </h1>
+        <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 text-zinc-400">
+          Recommendations need a free TMDB API key —{" "}
+          <Link href="/settings" className="text-violet-400 hover:underline">
+            add one in Settings
+          </Link>{" "}
+          to unlock this.
+        </p>
+      </div>
+    );
+  }
 
   const items =
     imdbId || tvdbId ? await fetchSimilarByExternal({ imdbId, tvdbId }).catch(() => []) : [];

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
-    "import": "tsx scripts/import-tvtime.ts"
+    "import": "tsx scripts/import-tvtime.ts",
+    "setup": "bash scripts/setup.sh",
+    "deploy": "bash scripts/deploy-vercel.sh"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

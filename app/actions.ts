@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { episodes, premieres, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
-import { getTvExternalIds } from "@/lib/tmdb";
+import { deleteSetting, setSetting } from "@/lib/settings";
+import { getTvExternalIds, validateCredential } from "@/lib/tmdb";
 import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/tvmaze";
 
 function revalidateAll() {
@@ -199,4 +200,24 @@ export async function unfollowShow(showId: number) {
 
 export async function searchAction(query: string) {
   return searchShows(query);
+}
+
+/** Validate and store a TMDB credential (v4 read token or v3 API key). */
+export async function saveTmdbKey(
+  key: string
+): Promise<{ ok: boolean; error?: string }> {
+  const value = key.trim();
+  if (!value) return { ok: false, error: "Key is empty" };
+  const cred = { kind: value.startsWith("eyJ") ? ("bearer" as const) : ("v3" as const), value };
+  if (!(await validateCredential(cred))) {
+    return { ok: false, error: "TMDB rejected this key — double-check it" };
+  }
+  await setSetting("tmdb_key", value);
+  revalidateAll();
+  return { ok: true };
+}
+
+export async function clearTmdbKey() {
+  await deleteSetting("tmdb_key");
+  revalidateAll();
 }

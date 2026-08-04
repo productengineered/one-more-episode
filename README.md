@@ -1,37 +1,101 @@
-# Showtime
+# Showtime 📺
 
-Personal TV show tracker — a self-hosted replacement for TV Time. Follows shows,
-tracks watched episodes, and shows upcoming air dates.
+A self-hosted TV show tracker — a replacement for the dearly departed **TV Time**.
+Follow shows, mark episodes watched, see what to watch next and when new
+episodes (and brand-new series) are coming.
 
-- **Stack**: Next.js (App Router) · Drizzle ORM · libSQL/SQLite · Tailwind
-- **Data sources**: [TVmaze API](https://www.tvmaze.com/api) (free, no API key) for
-  shows/episodes/schedules; [TMDB](https://www.themoviedb.org) for "shows like this"
-  recommendations — set `TMDB_READ_ACCESS_TOKEN` (and optionally `TMDB_API_KEY`)
-  in `.env.local` (remember these on Vercel too)
-- **Database**: local file at `data/tv.db`. For Vercel, point `DATABASE_URL`
-  (+ `DATABASE_AUTH_TOKEN`) at a [Turso](https://turso.tech) database — no code
-  changes needed.
+- **No accounts, no ads, your data stays yours** — runs locally or on your own
+  free Vercel + Turso stack
+- **Works with zero API keys** — show data comes from the free
+  [TVmaze API](https://www.tvmaze.com/api)
+- **Import your TV Time history** — point it at your TV Time GDPR export and
+  your followed shows and full watch history come along
+- Optional: add a free [TMDB](https://www.themoviedb.org) key on the Settings
+  page to unlock "shows like this" recommendations
+
+## Features
+
+- **Watch Next** — the next unwatched episode of every show you're behind on,
+  with progress bars and one-tap "watched"
+- **Upcoming** — future air dates for your shows, grouped by day
+- **Premieres** — brand-new series premiering in the next 90 days, with
+  platform / type / genre / country filters and a popularity sort
+- **Shows** — your library with per-show progress, season-level and
+  mark-all-watched actions, episode lists, auto-refreshing air dates
+- **Add** — search and follow any show
+- **Similar** *(with TMDB key)* — "more like this" on every show page and
+  from search results, followable in one click
+- Installable as a PWA; dark UI
+
+## Quick start (local)
+
+```bash
+git clone <this repo> && cd showtime
+npm run setup     # installs deps, creates the database, offers to import TV Time data
+npm run dev       # → http://localhost:3000
+```
+
+That's it. No configuration required.
+
+### Importing your TV Time history
+
+Request your data export from TV Time (GDPR request), then:
+
+```bash
+npm run import -- /path/to/your/tvtime-export
+```
+
+(or drop the folder in the project as `gdpr-data/` and just `npm run import`).
+Shows are matched to TVmaze by TheTVDB id with a name-search fallback; your
+per-episode watch history is matched by season/episode number. The script
+prints a summary of anything it couldn't match.
+
+### Recommendations (optional)
+
+Everything works without any key. To also get "shows like this":
+open **Settings (⚙)** in the app and paste a free TMDB API key
+([get one here](https://www.themoviedb.org/settings/api)). Either the
+"API Read Access Token" or the shorter "API Key" works. The key is stored in
+your database — never committed, never sent anywhere except TMDB.
+
+## Deploy to Vercel
+
+The database driver speaks both local SQLite files and
+[Turso](https://turso.tech) (free tier is plenty), so deploying is just an
+env-var change. With the [Turso CLI](https://docs.turso.tech/cli/installation)
+and [Vercel CLI](https://vercel.com/docs/cli) installed:
+
+```bash
+npm run deploy    # guided: creates the Turso DB (seeded from your local
+                  # library if you want), pushes schema, sets env vars, deploys
+```
+
+Or manually: create a Turso database, set `DATABASE_URL` and
+`DATABASE_AUTH_TOKEN` on your Vercel project, run
+`DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:push`, and `vercel --prod`.
+
+> **Important:** Showtime is a single-user app with no login. On a public
+> deployment, enable **Settings → Deployment Protection → Vercel
+> Authentication** in the Vercel dashboard so only you can reach it.
 
 ## Commands
 
 ```bash
-npm run dev        # start the app at http://localhost:3000
-npm run db:push    # create/update database schema
-npm run import     # one-time import of a TV Time GDPR export from ./gdpr-data
+npm run setup      # one-shot local setup
+npm run dev        # start the app
+npm run import     # import a TV Time GDPR export (optionally pass a path)
+npm run db:push    # create/update the database schema
+npm run deploy     # guided Vercel + Turso deployment
 npm run build      # production build
 ```
 
-## Pages
+## Data sources & attribution
 
-- **/** — Watch Next: the next unwatched episode of every show you're behind on
-- **/upcoming** — future air dates, grouped by day, plus shows waiting on a schedule
-- **/premieres** — new series premiering in the next 90 days (from TVmaze's full
-  schedule feed), with platform/type/genre/country filters and a popularity sort
-- **/shows** — poster grid of everything you follow, with progress
-- **/shows/[id]** — seasons and episodes, watched toggles, refresh, unfollow
-- **/add** — search TVmaze and follow new shows, with a "shows like this" link per result
-- **/similar** — TMDB recommendations for any show, followable in one click; the same
-  grid appears as "More like this" on show detail pages (cached 30 days per show)
+- Show, episode, and schedule data: [TVmaze](https://www.tvmaze.com)
+  (free for non-commercial use, [CC BY-SA](https://www.tvmaze.com/api#licensing))
+- Recommendations and some artwork: [TMDB](https://www.themoviedb.org).
+  This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-Show data refreshes automatically when you open a show that hasn't synced in
-24h (ended shows are skipped), or in bulk via "Refresh air dates" on Upcoming.
+## License
+
+[MIT](LICENSE)

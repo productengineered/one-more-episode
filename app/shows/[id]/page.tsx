@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { setSeasonWatched, refreshShow } from "@/app/actions";
 import { UnfollowButton } from "@/components/UnfollowButton";
@@ -10,6 +11,7 @@ import { SimilarGrid } from "@/components/SimilarGrid";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 import { getShowDetail } from "@/lib/queries";
 import { getSimilarShows } from "@/lib/similar";
+import { isTmdbConfigured } from "@/lib/tmdb";
 import { syncShow } from "@/lib/sync";
 import { db } from "@/lib/db";
 import { shows as showsTable, type Episode } from "@/lib/db/schema";
@@ -54,7 +56,8 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
     .sort((a, b) => Date.parse(a.airstamp!) - Date.parse(b.airstamp!))[0];
   const genres: string[] = show.genres ? JSON.parse(show.genres) : [];
 
-  const similarShows = await getSimilarShows(show).catch(() => []);
+  const tmdbConfigured = await isTmdbConfigured();
+  const similarShows = tmdbConfigured ? await getSimilarShows(show).catch(() => []) : [];
   const followedNames = new Set(
     (await db.select({ name: showsTable.name }).from(showsTable)).map((s) =>
       s.name.toLowerCase()
@@ -213,11 +216,21 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
           })}
       </div>
 
-      {similarShows.length > 0 && (
+      {similarShows.length > 0 ? (
         <section>
           <h2 className="mb-3 text-sm font-semibold text-zinc-300">More like this</h2>
           <SimilarGrid items={similarShows} followedNames={followedNames} />
         </section>
+      ) : (
+        !tmdbConfigured && (
+          <p className="text-xs text-zinc-600">
+            Want “more like this” here? Add a free TMDB key in{" "}
+            <Link href="/settings" className="text-zinc-400 hover:text-zinc-200">
+              Settings
+            </Link>
+            .
+          </p>
+        )
       )}
     </div>
   );

@@ -9,16 +9,17 @@
  * fallback), pulls its full episode list, then matches watch history rows by
  * (season, episode number).
  *
- * Usage: npm run import
+ * Usage: npm run import [-- /path/to/your/tvtime-export]   (default: ./gdpr-data)
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { and, eq } from "drizzle-orm";
 import { db } from "../lib/db";
 import { episodes, watched } from "../lib/db/schema";
 import { lookupByTvdb, searchShows } from "../lib/tvmaze";
 import { syncShow } from "../lib/sync";
 
-const EXPORT_DIR = new URL("../gdpr-data/", import.meta.url).pathname;
+const EXPORT_DIR = resolve(process.argv[2] ?? "gdpr-data");
 
 function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = [];
@@ -65,8 +66,17 @@ function toIso(tvTimeDate: string): string {
 }
 
 async function main() {
-  const follows = parseCsv(readFileSync(EXPORT_DIR + "followed_tv_show.csv", "utf8"));
-  const records = parseCsv(readFileSync(EXPORT_DIR + "tracking-prod-records-v2.csv", "utf8"));
+  if (!existsSync(join(EXPORT_DIR, "followed_tv_show.csv"))) {
+    console.error(
+      `No TV Time export found at ${EXPORT_DIR}\n` +
+        `Pass the folder containing followed_tv_show.csv:  npm run import -- /path/to/export`
+    );
+    process.exit(1);
+  }
+  const follows = parseCsv(readFileSync(join(EXPORT_DIR, "followed_tv_show.csv"), "utf8"));
+  const records = parseCsv(
+    readFileSync(join(EXPORT_DIR, "tracking-prod-records-v2.csv"), "utf8")
+  );
 
   const watchRows = records.filter((r) => r.key?.startsWith("watch-episode"));
   console.log(`Export: ${follows.length} followed shows, ${watchRows.length} watch records\n`);

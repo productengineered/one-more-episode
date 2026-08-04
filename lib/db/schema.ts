@@ -45,6 +45,12 @@ export const episodes = sqliteTable(
   (t) => [index("episodes_show_idx").on(t.showId), index("episodes_air_idx").on(t.airstamp)]
 );
 
+// App configuration set from the Settings page (e.g. TMDB credentials).
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 // Upcoming series premieres (S1E1s from TVmaze's full schedule feed), refreshed on demand.
 export const premieres = sqliteTable("premieres", {
   showId: integer("show_id").primaryKey(), // TVmaze show id

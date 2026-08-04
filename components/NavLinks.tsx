@@ -9,6 +9,7 @@ const links = [
   { href: "/premieres", label: "Premieres" },
   { href: "/shows", label: "Shows" },
   { href: "/add", label: "+ Add" },
+  { href: "/settings", label: "⚙" },
 ] as const;
 
 export function NavLinks() {

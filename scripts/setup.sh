@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "▶ Showtime setup"
+echo "▶ One More Episode — setup"
 echo
 
 if ! command -v node >/dev/null 2>&1; then

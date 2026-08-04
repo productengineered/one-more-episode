@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "▶ Showtime → Vercel"
+echo "▶ One More Episode → Vercel"
 echo
 
 missing=0
@@ -22,7 +22,7 @@ if [ "$missing" = 1 ]; then
   exit 1
 fi
 
-DB_NAME="${1:-showtime}"
+DB_NAME="${1:-one-more-episode}"
 
 if turso db show "$DB_NAME" >/dev/null 2>&1; then
   echo "→ Using existing Turso database '$DB_NAME'"

@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Showtime",
-  description: "Personal TV show tracker",
-  appleWebApp: { capable: true, title: "Showtime", statusBarStyle: "black-translucent" },
+  title: "One More Episode",
+  description: "Self-hosted TV show tracker — the lie we all tell at 1am",
+  appleWebApp: { capable: true, title: "One More Ep", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-violet-600 text-sm">
                 ▶
               </span>
-              Showtime
+              One More Episode
             </Link>
             <NavLinks />
           </div>

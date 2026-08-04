@@ -1,4 +1,6 @@
-# Showtime 📺
+# One More Episode 📺
+
+*The lie we all tell at 1am.*
 
 A self-hosted TV show tracker — a replacement for the dearly departed **TV Time**.
 Follow shows, mark episodes watched, see what to watch next and when new
@@ -30,7 +32,8 @@ episodes (and brand-new series) are coming.
 ## Quick start (local)
 
 ```bash
-git clone <this repo> && cd showtime
+git clone https://github.com/brdohman/one-more-episode.git
+cd one-more-episode
 npm run setup     # installs deps, creates the database, offers to import TV Time data
 npm run dev       # → http://localhost:3000
 ```
@@ -74,8 +77,8 @@ Or manually: create a Turso database, set `DATABASE_URL` and
 `DATABASE_AUTH_TOKEN` on your Vercel project, run
 `DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:push`, and `vercel --prod`.
 
-> **Important:** Showtime is a single-user app with no login. On a public
-> deployment, enable **Settings → Deployment Protection → Vercel
+> **Important:** One More Episode is a single-user app with no login. On a
+> public deployment, enable **Settings → Deployment Protection → Vercel
 > Authentication** in the Vercel dashboard so only you can reach it.
 
 ## Commands

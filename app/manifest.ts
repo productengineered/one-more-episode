@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Showtime",
-    short_name: "Showtime",
-    description: "Personal TV show tracker",
+    name: "One More Episode",
+    short_name: "One More Ep",
+    description: "Self-hosted TV show tracker",
     start_url: "/",
     display: "standalone",
     background_color: "#09090b",

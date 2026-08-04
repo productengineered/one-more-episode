@@ -30,7 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject
+          attributes into <body> before hydration; only this element's attribute
+          mismatches are ignored, children are still validated. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <header className="sticky top-0 z-20 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur">
           <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-4">
             <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">

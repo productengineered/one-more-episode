@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { followShow } from "@/app/actions";
 import { db } from "@/lib/db";
@@ -77,6 +78,14 @@ export default async function AddPage({ searchParams }: PageProps<"/add">) {
                 <p className="line-clamp-2 pt-1 text-sm text-zinc-400">
                   {stripHtml(show.summary)}
                 </p>
+                <Link
+                  href={`/similar?name=${encodeURIComponent(show.name)}&imdb=${
+                    show.externals?.imdb ?? ""
+                  }&tvdb=${show.externals?.thetvdb ?? ""}`}
+                  className="inline-block pt-1 text-xs text-violet-400 hover:underline"
+                >
+                  Shows like this →
+                </Link>
               </div>
               <div className="shrink-0 self-center">
                 {following ? (

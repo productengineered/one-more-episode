@@ -6,10 +6,13 @@ import { WatchedButton } from "@/components/WatchedButton";
 import { CatchUpButton } from "@/components/CatchUpButton";
 import { MarkAllButton } from "@/components/MarkAllButton";
 import { ProgressBar } from "@/components/ProgressBar";
+import { SimilarGrid } from "@/components/SimilarGrid";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 import { getShowDetail } from "@/lib/queries";
+import { getSimilarShows } from "@/lib/similar";
 import { syncShow } from "@/lib/sync";
-import type { Episode } from "@/lib/db/schema";
+import { db } from "@/lib/db";
+import { shows as showsTable, type Episode } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +53,13 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
     .filter((e) => e.airstamp && Date.parse(e.airstamp) > now)
     .sort((a, b) => Date.parse(a.airstamp!) - Date.parse(b.airstamp!))[0];
   const genres: string[] = show.genres ? JSON.parse(show.genres) : [];
+
+  const similarShows = await getSimilarShows(show).catch(() => []);
+  const followedNames = new Set(
+    (await db.select({ name: showsTable.name }).from(showsTable)).map((s) =>
+      s.name.toLowerCase()
+    )
+  );
 
   return (
     <div className="space-y-6">
@@ -202,6 +212,13 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
             );
           })}
       </div>
+
+      {similarShows.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-zinc-300">More like this</h2>
+          <SimilarGrid items={similarShows} followedNames={followedNames} />
+        </section>
+      )}
     </div>
   );
 }

@@ -1,10 +1,11 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // id is the TVmaze show id
 export const shows = sqliteTable("shows", {
   id: integer("id").primaryKey(),
   tvdbId: integer("tvdb_id"),
   imdbId: text("imdb_id"),
+  tmdbId: integer("tmdb_id"),
   name: text("name").notNull(),
   status: text("status").notNull().default("Unknown"),
   premiered: text("premiered"),
@@ -60,6 +61,22 @@ export const premieres = sqliteTable("premieres", {
   fetchedAt: text("fetched_at").notNull(),
 });
 
+// Cached TMDB "shows like this" results per followed show.
+export const similar = sqliteTable(
+  "similar",
+  {
+    sourceShowId: integer("source_show_id").notNull(), // TVmaze id of the show these relate to
+    tmdbId: integer("tmdb_id").notNull(),
+    name: text("name").notNull(),
+    year: text("year"),
+    overview: text("overview"),
+    posterPath: text("poster_path"),
+    voteAverage: real("vote_average"),
+    fetchedAt: text("fetched_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sourceShowId, t.tmdbId] })]
+);
+
 export const watched = sqliteTable(
   "watched",
   {
@@ -78,3 +95,4 @@ export type Show = typeof shows.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
 export type Watched = typeof watched.$inferSelect;
 export type Premiere = typeof premieres.$inferSelect;
+export type SimilarShow = typeof similar.$inferSelect;

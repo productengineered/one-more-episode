@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { episodes, premieres, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
-import { getFullSchedule, searchShows } from "@/lib/tvmaze";
+import { getTvExternalIds } from "@/lib/tmdb";
+import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/tvmaze";
 
 function revalidateAll() {
   revalidatePath("/", "layout");
@@ -169,6 +170,22 @@ export async function refreshPremieres() {
 export async function followShow(tvmazeId: number) {
   await syncShow(tvmazeId, { followedAt: new Date().toISOString() });
   revalidateAll();
+}
+
+/** Follow a show known only by its TMDB id (from a recommendation card). */
+export async function followFromTmdb(tmdbId: number): Promise<{ ok: boolean }> {
+  try {
+    const ext = await getTvExternalIds(tmdbId);
+    let tvmaze = ext.imdb_id ? await lookupByImdb(ext.imdb_id) : null;
+    if (!tvmaze && ext.tvdb_id) tvmaze = await lookupByTvdb(ext.tvdb_id);
+    if (!tvmaze) return { ok: false };
+    await syncShow(tvmaze.id, { followedAt: new Date().toISOString() });
+    await db.update(shows).set({ tmdbId }).where(eq(shows.id, tvmaze.id));
+    revalidateAll();
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export async function unfollowShow(showId: number) {

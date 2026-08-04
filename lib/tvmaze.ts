@@ -75,6 +75,10 @@ export function lookupByTvdb(tvdbId: number): Promise<TvmazeShow | null> {
   return get<TvmazeShow>(`/lookup/shows?thetvdb=${tvdbId}`, true);
 }
 
+export function lookupByImdb(imdbId: string): Promise<TvmazeShow | null> {
+  return get<TvmazeShow>(`/lookup/shows?imdb=${imdbId}`, true);
+}
+
 export function getShowWithEpisodes(tvmazeId: number): Promise<TvmazeShow | null> {
   return get<TvmazeShow>(`/shows/${tvmazeId}?embed[]=episodes&specials=1`, true);
 }

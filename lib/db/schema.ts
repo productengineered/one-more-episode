@@ -52,6 +52,8 @@ export const premieres = sqliteTable("premieres", {
   network: text("network"),
   showType: text("show_type"),
   genres: text("genres"), // JSON array
+  country: text("country"), // network country code; null for global streamers
+  weight: integer("weight").notNull().default(0), // TVmaze popularity score 0-100
   summary: text("summary"),
   imageMedium: text("image_medium"),
   url: text("url"),

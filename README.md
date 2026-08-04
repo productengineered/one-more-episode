@@ -22,6 +22,8 @@ npm run build      # production build
 
 - **/** — Watch Next: the next unwatched episode of every show you're behind on
 - **/upcoming** — future air dates, grouped by day, plus shows waiting on a schedule
+- **/premieres** — new series premiering in the next 90 days (from TVmaze's full
+  schedule feed), with platform/type/genre/country filters and a popularity sort
 - **/shows** — poster grid of everything you follow, with progress
 - **/shows/[id]** — seasons and episodes, watched toggles, refresh, unfollow
 - **/add** — search TVmaze and follow new shows

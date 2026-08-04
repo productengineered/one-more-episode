@@ -148,6 +148,8 @@ export async function refreshPremieres() {
       network: show.network?.name ?? show.webChannel?.name ?? null,
       showType: show.type ?? null,
       genres: JSON.stringify(show.genres ?? []),
+      country: show.network?.country?.code ?? show.webChannel?.country?.code ?? null,
+      weight: show.weight ?? 0,
       summary: show.summary,
       imageMedium: show.image?.medium ?? null,
       url: show.url,

@@ -34,8 +34,9 @@ export interface TvmazeShow {
   averageRuntime: number | null;
   genres: string[];
   schedule: { time: string; days: string[] };
-  network: { name: string } | null;
-  webChannel: { name: string } | null;
+  weight: number | null;
+  network: { name: string; country: { name: string; code: string } | null } | null;
+  webChannel: { name: string; country: { name: string; code: string } | null } | null;
   externals: { thetvdb: number | null; imdb: string | null };
   image: TvmazeImage | null;
   summary: string | null;

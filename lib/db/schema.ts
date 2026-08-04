@@ -44,6 +44,20 @@ export const episodes = sqliteTable(
   (t) => [index("episodes_show_idx").on(t.showId), index("episodes_air_idx").on(t.airstamp)]
 );
 
+// Upcoming series premieres (S1E1s from TVmaze's full schedule feed), refreshed on demand.
+export const premieres = sqliteTable("premieres", {
+  showId: integer("show_id").primaryKey(), // TVmaze show id
+  name: text("name").notNull(),
+  premiereAt: text("premiere_at").notNull(),
+  network: text("network"),
+  showType: text("show_type"),
+  genres: text("genres"), // JSON array
+  summary: text("summary"),
+  imageMedium: text("image_medium"),
+  url: text("url"),
+  fetchedAt: text("fetched_at").notNull(),
+});
+
 export const watched = sqliteTable(
   "watched",
   {
@@ -61,3 +75,4 @@ export const watched = sqliteTable(
 export type Show = typeof shows.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
 export type Watched = typeof watched.$inferSelect;
+export type Premiere = typeof premieres.$inferSelect;

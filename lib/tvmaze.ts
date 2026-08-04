@@ -26,6 +26,8 @@ export interface TvmazeShow {
   url: string;
   name: string;
   status: string;
+  type: string | null;
+  language: string | null;
   premiered: string | null;
   ended: string | null;
   runtime: number | null;
@@ -80,4 +82,19 @@ export function searchShows(query: string): Promise<{ score: number; show: Tvmaz
   return get<{ score: number; show: TvmazeShow }[]>(
     `/search/shows?q=${encodeURIComponent(query)}`
   ).then((r) => r ?? []);
+}
+
+export interface TvmazeScheduleItem {
+  id: number;
+  season: number;
+  number: number | null;
+  airdate: string | null;
+  airstamp: string | null;
+  show?: TvmazeShow;
+  _embedded?: { show?: TvmazeShow };
+}
+
+/** Every future episode TVmaze knows about, worldwide. One large request (~tens of MB). */
+export function getFullSchedule(): Promise<TvmazeScheduleItem[]> {
+  return get<TvmazeScheduleItem[]>(`/schedule/full`).then((r) => r ?? []);
 }

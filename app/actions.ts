@@ -3,9 +3,9 @@
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { episodes, shows, watched } from "@/lib/db/schema";
+import { episodes, premieres, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
-import { searchShows } from "@/lib/tvmaze";
+import { getFullSchedule, searchShows } from "@/lib/tvmaze";
 
 function revalidateAll() {
   revalidatePath("/", "layout");
@@ -120,6 +120,48 @@ export async function refreshStaleShows() {
   }
   revalidateAll();
   return { checked: stale.length, synced };
+}
+
+/**
+ * Rebuild the premieres table from TVmaze's full future-schedule feed:
+ * S1E1s of English-language shows airing in the next 90 days.
+ */
+export async function refreshPremieres() {
+  const items = await getFullSchedule();
+  const now = Date.now();
+  const horizon = now + 90 * 86400_000;
+  const fetchedAt = new Date().toISOString();
+
+  const byShow = new Map<number, typeof premieres.$inferInsert>();
+  for (const it of items) {
+    if (it.season !== 1 || it.number !== 1) continue;
+    const show = it.show ?? it._embedded?.show;
+    if (!show || show.language !== "English") continue;
+    const premiereAt = it.airstamp ?? (it.airdate ? `${it.airdate}T00:00:00Z` : null);
+    if (!premiereAt) continue;
+    const t = Date.parse(premiereAt);
+    if (!Number.isFinite(t) || t < now - 86400_000 || t > horizon) continue;
+    byShow.set(show.id, {
+      showId: show.id,
+      name: show.name,
+      premiereAt,
+      network: show.network?.name ?? show.webChannel?.name ?? null,
+      showType: show.type ?? null,
+      genres: JSON.stringify(show.genres ?? []),
+      summary: show.summary,
+      imageMedium: show.image?.medium ?? null,
+      url: show.url,
+      fetchedAt,
+    });
+  }
+
+  const rows = [...byShow.values()];
+  await db.delete(premieres);
+  for (let i = 0; i < rows.length; i += 50) {
+    await db.insert(premieres).values(rows.slice(i, i + 50));
+  }
+  revalidateAll();
+  return { count: rows.length };
 }
 
 export async function followShow(tvmazeId: number) {

@@ -32,7 +32,7 @@ episodes (and brand-new series) are coming.
 ## Quick start (local)
 
 ```bash
-git clone https://github.com/brdohman/one-more-episode.git
+git clone https://github.com/productengineered/one-more-episode.git
 cd one-more-episode
 npm run setup     # installs deps, creates the database, offers to import TV Time data
 npm run dev       # → http://localhost:3000

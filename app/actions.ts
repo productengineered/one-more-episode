@@ -2,6 +2,8 @@
 
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { SESSION_COOKIE, sessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { airing, episodes, shows, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
@@ -267,6 +269,25 @@ export async function saveTmdbKey(
 export async function clearTmdbKey() {
   await deleteSetting("tmdb_key");
   revalidateAll();
+}
+
+export async function login(password: string): Promise<{ ok: boolean }> {
+  const expected = process.env.APP_PASSWORD;
+  if (!expected) return { ok: true }; // auth disabled
+  if (password !== expected) return { ok: false };
+  const token = await sessionToken();
+  (await cookies()).set(SESSION_COOKIE, token!, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 30,
+    path: "/",
+  });
+  return { ok: true };
+}
+
+export async function logout() {
+  (await cookies()).delete(SESSION_COOKIE);
 }
 
 /** Store the user's IANA timezone; empty string reverts to server default. */

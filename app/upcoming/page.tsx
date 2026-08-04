@@ -6,6 +6,8 @@ import { getUserTimezone } from "@/lib/settings";
 import { RefreshAllButton } from "@/components/RefreshAllButton";
 
 export const dynamic = "force-dynamic";
+// "Refresh air dates" syncs many shows against a throttled API.
+export const maxDuration = 60;
 
 export default async function UpcomingPage() {
   const tz = await getUserTimezone();

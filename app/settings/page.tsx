@@ -1,3 +1,4 @@
+import { SignOutButton } from "@/components/SignOutButton";
 import { TimezoneForm } from "@/components/TimezoneForm";
 import { TmdbKeyForm } from "@/components/TmdbKeyForm";
 import { db } from "@/lib/db";
@@ -70,6 +71,17 @@ export default async function SettingsPage() {
           serverDefault={Intl.DateTimeFormat().resolvedOptions().timeZone}
         />
       </section>
+
+      {process.env.APP_PASSWORD && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-zinc-300">Account</h2>
+          <p className="text-sm text-zinc-500">
+            Login is enabled (set via the <code className="rounded bg-zinc-900 px-1">APP_PASSWORD</code>{" "}
+            environment variable). Changing the password signs out all sessions.
+          </p>
+          <SignOutButton />
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-300">Library</h2>

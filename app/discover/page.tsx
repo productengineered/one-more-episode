@@ -12,6 +12,9 @@ import { isTmdbConfigured } from "@/lib/tmdb";
 import { TrailerButton } from "@/components/TrailerButton";
 
 export const dynamic = "force-dynamic";
+// The full-schedule refresh downloads and parses a large feed — allow more
+// than serverless defaults.
+export const maxDuration = 60;
 
 const RENDER_CAP = 200;
 

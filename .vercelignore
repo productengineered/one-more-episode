@@ -1,0 +1,5 @@
+planning/
+gdpr-data/
+data/
+.env*
+.DS_Store

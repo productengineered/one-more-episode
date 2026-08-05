@@ -89,6 +89,47 @@ export const similar = sqliteTable(
   (t) => [primaryKey({ columns: [t.sourceShowId, t.tmdbId] })]
 );
 
+// ── Plex library mirror ─────────────────────────────────────────────────
+// Backfilled from a Plex database export, kept current by the Plex webhook
+// (library.new). tvmazeShowId links a Plex show to our shows table when a
+// match is found; presence icons join through it.
+export const plexShows = sqliteTable("plex_shows", {
+  ratingKey: text("rating_key").primaryKey(), // Plex's stable id
+  title: text("title").notNull(),
+  year: integer("year"),
+  guid: text("guid"),
+  tvdbId: integer("tvdb_id"),
+  tmdbId: integer("tmdb_id"),
+  imdbId: text("imdb_id"),
+  tvmazeShowId: integer("tvmaze_show_id"),
+  addedAt: text("added_at"),
+});
+
+export const plexEpisodes = sqliteTable(
+  "plex_episodes",
+  {
+    ratingKey: text("rating_key").primaryKey(),
+    showRatingKey: text("show_rating_key"),
+    showTitle: text("show_title"),
+    season: integer("season"),
+    number: integer("number"),
+    title: text("title"),
+    addedAt: text("added_at"),
+  },
+  (t) => [index("plex_episodes_show_idx").on(t.showRatingKey)]
+);
+
+// Stored now, surfaced later — a movie feature is planned.
+export const plexMovies = sqliteTable("plex_movies", {
+  ratingKey: text("rating_key").primaryKey(),
+  title: text("title").notNull(),
+  year: integer("year"),
+  guid: text("guid"),
+  tmdbId: integer("tmdb_id"),
+  imdbId: text("imdb_id"),
+  addedAt: text("added_at"),
+});
+
 export const watched = sqliteTable(
   "watched",
   {

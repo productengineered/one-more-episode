@@ -1,5 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { eq, isNotNull } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { plexEpisodes, plexShows } from "@/lib/db/schema";
 import { dayLabel, epCode, formatDateTime, relativeDays } from "@/lib/format";
 import { getAllProgress, getUpcoming } from "@/lib/queries";
 import { getUserTimezone } from "@/lib/settings";
@@ -11,11 +14,30 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export default async function UpcomingPage() {
-  const [tz, upcoming, progress] = await Promise.all([
+  const [tz, upcoming, progress, plexShowRows, plexEpisodeRows] = await Promise.all([
     getUserTimezone(),
     getUpcoming(),
     getAllProgress(),
+    db
+      .select({ id: plexShows.tvmazeShowId })
+      .from(plexShows)
+      .where(isNotNull(plexShows.tvmazeShowId)),
+    db
+      .select({
+        showId: plexShows.tvmazeShowId,
+        season: plexEpisodes.season,
+        number: plexEpisodes.number,
+      })
+      .from(plexEpisodes)
+      .innerJoin(plexShows, eq(plexEpisodes.showRatingKey, plexShows.ratingKey))
+      .where(isNotNull(plexShows.tvmazeShowId)),
   ]);
+  const plexShowIds = new Set(plexShowRows.map((r) => r.id));
+  const plexEpisodeKeys = new Set(
+    plexEpisodeRows
+      .filter((r) => r.season !== null && r.number !== null)
+      .map((r) => `${r.showId}:${r.season}:${r.number}`)
+  );
 
   const todayLabel = dayLabel(new Date().toISOString(), tz);
   const now = Date.now();
@@ -125,6 +147,25 @@ export default async function UpcomingPage() {
                     {episode.name ?? "TBA"}
                   </p>
                 </div>
+                {(() => {
+                  const inPlex = plexEpisodeKeys.has(
+                    `${show.id}:${episode.season}:${episode.number}`
+                  );
+                  const tracked = plexShowIds.has(show.id);
+                  if (!inPlex && !tracked) return null;
+                  return (
+                    <span
+                      title={inPlex ? "Episode is in your Plex" : "Show is on your Plex"}
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        inPlex
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "border border-zinc-800 text-zinc-600"
+                      }`}
+                    >
+                      »
+                    </span>
+                  );
+                })()}
                 <div className="shrink-0 text-right text-xs text-zinc-500">
                   <p>{formatDateTime(episode.airstamp, tz)}</p>
                   {show.network && <p className="text-zinc-600">{show.network}</p>}

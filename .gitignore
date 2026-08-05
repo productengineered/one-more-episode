@@ -45,3 +45,6 @@ next-env.d.ts
 
 # personal TV Time export (never commit)
 /gdpr-data/
+
+# local planning scratch (never commit)
+/planning/

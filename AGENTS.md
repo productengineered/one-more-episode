@@ -52,3 +52,8 @@ https://github.com/productengineered/one-more-episode
 - Dates: always format via `lib/format.ts` helpers, prefer `airstamp` over
   `airdate` (date-only strings shift a day if parsed as UTC), and pass the
   user's timezone from `getUserTimezone()` — the server may run in UTC.
+- Perf: the database may be a network hop away (Turso). Never ship whole
+  tables to compute aggregates in JS — push counts/window functions into SQL
+  (see lib/queries.ts getAllProgress), batch independent awaits with
+  Promise.all, and keep Vercel functions in the same region as the DB
+  (vercel.json "regions").

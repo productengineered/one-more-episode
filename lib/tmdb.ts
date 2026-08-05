@@ -101,6 +101,12 @@ export function getTvVideos(tmdbId: number): Promise<TmdbVideo[]> {
   );
 }
 
+export function getMovieVideos(tmdbId: number): Promise<TmdbVideo[]> {
+  return get<{ results: TmdbVideo[] }>(`/movie/${tmdbId}/videos`, 86400).then(
+    (r) => r.results ?? []
+  );
+}
+
 export function tmdbPosterUrl(posterPath: string | null, size = "w185"): string | null {
   return posterPath ? `https://image.tmdb.org/t/p/${size}${posterPath}` : null;
 }

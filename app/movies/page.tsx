@@ -4,6 +4,7 @@ import { refreshMovies } from "@/app/actions";
 import { RefreshMoviesButton } from "@/components/RefreshMoviesButton";
 import { TodayScroll } from "@/components/TodayScroll";
 import { TrackMovieButton } from "@/components/TrackMovieButton";
+import { TrailerButton } from "@/components/TrailerButton";
 import { db } from "@/lib/db";
 import {
   moviesFeed,
@@ -149,7 +150,14 @@ export default async function MoviesPage() {
                         <p className="text-sm font-semibold text-amber-400">» In Plex</p>
                       )}
                     </div>
-                    <TrackMovieButton tmdbId={t.tmdbId} tracked size="sm" />
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <TrailerButton
+                        showName={t.title}
+                        hints={{ tmdbId: t.tmdbId, movie: true }}
+                        size="sm"
+                      />
+                      <TrackMovieButton tmdbId={t.tmdbId} tracked size="sm" />
+                    </div>
                   </li>
                 );
               })}
@@ -224,7 +232,18 @@ export default async function MoviesPage() {
                       <p className="mt-0.5 text-sm font-semibold text-amber-400">» In Plex</p>
                     )}
                   </div>
-                  <TrackMovieButton tmdbId={m.tmdbId} tracked={trackedIds.has(m.tmdbId)} size="sm" />
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <TrailerButton
+                      showName={m.title}
+                      hints={{ tmdbId: m.tmdbId, movie: true }}
+                      size="sm"
+                    />
+                    <TrackMovieButton
+                      tmdbId={m.tmdbId}
+                      tracked={trackedIds.has(m.tmdbId)}
+                      size="sm"
+                    />
+                  </div>
                 </li>
               );
             })}

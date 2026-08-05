@@ -8,6 +8,7 @@ interface ResolveHints {
   imdbId?: string | null;
   tvdbId?: number | null;
   tvmazeShowId?: number | null;
+  movie?: boolean;
 }
 
 export function TrailerButton({

@@ -4,6 +4,7 @@ import { dayLabel, epCode, formatDateTime, relativeDays } from "@/lib/format";
 import { getAllProgress, getUpcoming } from "@/lib/queries";
 import { getUserTimezone } from "@/lib/settings";
 import { RefreshAllButton } from "@/components/RefreshAllButton";
+import { TodayScroll } from "@/components/TodayScroll";
 
 export const dynamic = "force-dynamic";
 // "Refresh air dates" syncs many shows against a throttled API.
@@ -16,14 +17,38 @@ export default async function UpcomingPage() {
     getAllProgress(),
   ]);
 
-  const byDate = new Map<string, typeof upcoming>();
-  for (const u of upcoming) {
-    const key = dayLabel(u.episode.airstamp!, tz);
-    if (!byDate.has(key)) byDate.set(key, []);
-    byDate.get(key)!.push(u);
+  const todayLabel = dayLabel(new Date().toISOString(), tz);
+  const now = Date.now();
+  interface DayGroup {
+    label: string;
+    items: typeof upcoming;
+    isPast: boolean;
+    isToday: boolean;
   }
+  const groups: DayGroup[] = [];
+  for (const u of upcoming) {
+    const label = dayLabel(u.episode.airstamp!, tz);
+    let g = groups[groups.length - 1];
+    if (!g || g.label !== label) {
+      g = {
+        label,
+        items: [],
+        isToday: label === todayLabel,
+        isPast: label !== todayLabel && Date.parse(u.episode.airstamp!) < now,
+      };
+      groups.push(g);
+    }
+    g.items.push(u);
+  }
+  const hasPast = groups.some((g) => g.isPast);
+  const firstCurrentIdx = groups.findIndex((g) => !g.isPast);
 
-  const scheduledShowIds = new Set(upcoming.map((u) => u.show.id));
+  // "Waiting for a date" should only count shows with a *future* episode.
+  const scheduledShowIds = new Set(
+    upcoming
+      .filter((u) => Date.parse(u.episode.airstamp!) > Date.now())
+      .map((u) => u.show.id)
+  );
   const waiting = progress.filter(
     (p) => !scheduledShowIds.has(p.show.id) && p.show.status !== "Ended"
   );
@@ -36,22 +61,38 @@ export default async function UpcomingPage() {
         <RefreshAllButton />
       </div>
 
-      {byDate.size === 0 && (
+      {groups.length === 0 && (
         <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 text-zinc-400">
           Nothing scheduled in the next few months.
         </p>
       )}
 
-      {[...byDate.entries()].map(([date, items]) => (
-        <section key={date}>
-          <h2 className="mb-2 flex items-baseline gap-2 text-sm font-semibold text-zinc-300">
-            {date}
-            <span className="font-normal text-zinc-600">
-              {relativeDays(items[0].episode.airstamp!)}
-            </span>
+      {hasPast && <TodayScroll />}
+      {groups.map((g, i) => (
+        <section key={g.label} className={g.isPast ? "opacity-55" : undefined}>
+          {i === firstCurrentIdx && <div id="today-anchor" className="scroll-mt-20" />}
+          <h2
+            className={`mb-2 flex items-baseline gap-2 text-sm font-semibold ${
+              g.isPast ? "text-zinc-600" : "text-zinc-300"
+            }`}
+          >
+            {g.label}
+            {g.isToday ? (
+              <span className="rounded-full bg-violet-600/20 px-2 py-px text-xs font-semibold text-violet-300">
+                Today
+              </span>
+            ) : (
+              <span className="font-normal text-zinc-600">
+                {relativeDays(g.items[0].episode.airstamp!)}
+              </span>
+            )}
           </h2>
-          <ul className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
-            {items.map(({ show, episode }) => (
+          <ul
+            className={`overflow-hidden rounded-xl border bg-zinc-900/60 ${
+              g.isPast ? "border-zinc-800/50" : "border-zinc-800"
+            }`}
+          >
+            {g.items.map(({ show, episode }) => (
               <li
                 key={episode.id}
                 data-scroll-anchor={`episode-${episode.id}`}

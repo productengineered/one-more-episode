@@ -89,15 +89,15 @@ export interface UpcomingEpisode {
   episode: Episode;
 }
 
-/** Future episodes for followed shows, soonest first. */
-export async function getUpcoming(limitDays = 120): Promise<UpcomingEpisode[]> {
-  const nowIso = new Date().toISOString();
+/** Episodes for followed shows around now: `lookbackDays` back, `limitDays` ahead. */
+export async function getUpcoming(limitDays = 120, lookbackDays = 14): Promise<UpcomingEpisode[]> {
+  const startIso = new Date(Date.now() - lookbackDays * 86400_000).toISOString();
   const cutoffIso = new Date(Date.now() + limitDays * 86400_000).toISOString();
   const [allShows, futureEpisodes] = await Promise.all([
     db.select().from(shows).where(eq(shows.archived, 0)),
     db.all<Episode>(
       sql.raw(`SELECT ${EP_COLS} FROM episodes e
-        WHERE e.airstamp > '${nowIso}' AND e.airstamp <= '${cutoffIso}'
+        WHERE e.airstamp > '${startIso}' AND e.airstamp <= '${cutoffIso}'
           AND e.show_id IN (SELECT id FROM shows WHERE archived = 0)
         ORDER BY e.airstamp`)
     ),

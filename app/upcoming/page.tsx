@@ -147,28 +147,26 @@ export default async function UpcomingPage() {
                     {episode.name ?? "TBA"}
                   </p>
                 </div>
-                {(() => {
-                  const inPlex = plexEpisodeKeys.has(
-                    `${show.id}:${episode.season}:${episode.number}`
-                  );
-                  const tracked = plexShowIds.has(show.id);
-                  if (!inPlex && !tracked) return null;
-                  return (
-                    <span
-                      title={inPlex ? "Episode is in your Plex" : "Show is on your Plex"}
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                        inPlex
-                          ? "bg-amber-500/20 text-amber-400"
-                          : "border border-zinc-800 text-zinc-600"
-                      }`}
-                    >
-                      »
-                    </span>
-                  );
-                })()}
                 <div className="shrink-0 text-right text-xs text-zinc-500">
                   <p>{formatDateTime(episode.airstamp, tz)}</p>
                   {show.network && <p className="text-zinc-600">{show.network}</p>}
+                  {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (
+                    <p
+                      className="mt-0.5 text-sm font-semibold text-amber-400"
+                      title="Episode is in your Plex"
+                    >
+                      » In Plex
+                    </p>
+                  ) : (
+                    plexShowIds.has(show.id) && (
+                      <p
+                        className="mt-0.5 text-sm text-amber-700"
+                        title="Show is on your Plex — this episode isn't there yet"
+                      >
+                        » Plex
+                      </p>
+                    )
+                  )}
                 </div>
               </li>
             ))}

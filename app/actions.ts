@@ -187,14 +187,24 @@ export async function refreshAiring() {
 }
 
 /**
- * Rebuild the movies feed: popular US releases (60 days back, 120 ahead) with
+ * Rebuild the movies feed: popular US releases (60 days back, 180 ahead) with
  * their theatrical/digital dates, then refresh dates on tracked movies so
  * "waiting for digital" resolves automatically.
+ *
+ * The window is queried in 60-day slices, most-popular-first per slice —
+ * popularity is buzz-driven, so one popularity-sorted query would fill up
+ * entirely with current releases and starve the future months.
  */
 export async function refreshMovies() {
-  const from = new Date(Date.now() - 60 * 86400_000).toISOString().slice(0, 10);
-  const to = new Date(Date.now() + 120 * 86400_000).toISOString().slice(0, 10);
-  const found = await discoverUsMovies(from, to);
+  const seen = new Map<number, Awaited<ReturnType<typeof discoverUsMovies>>[number]>();
+  for (let offset = -60; offset < 180; offset += 60) {
+    const from = new Date(Date.now() + offset * 86400_000).toISOString().slice(0, 10);
+    const to = new Date(Date.now() + (offset + 60) * 86400_000).toISOString().slice(0, 10);
+    for (const m of await discoverUsMovies(from, to, 2)) {
+      if (!seen.has(m.id)) seen.set(m.id, m);
+    }
+  }
+  const found = [...seen.values()];
   const fetchedAt = new Date().toISOString();
 
   const rows: (typeof moviesFeed.$inferInsert)[] = [];

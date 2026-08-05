@@ -62,7 +62,7 @@ export default async function MoviesPage() {
 
   const now = Date.now();
   const from = now - 60 * 86400_000;
-  const to = now + 120 * 86400_000;
+  const to = now + 180 * 86400_000;
   const items = feed
     .filter((m) => {
       const d = displayDate(m);

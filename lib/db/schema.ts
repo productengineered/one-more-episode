@@ -89,6 +89,33 @@ export const similar = sqliteTable(
   (t) => [primaryKey({ columns: [t.sourceShowId, t.tmdbId] })]
 );
 
+// ── Movies ──────────────────────────────────────────────────────────────
+// Popular US releases from TMDB (weekly cron + manual refresh). A movie shows
+// on the timeline at digitalAt when known, else theatricalAt.
+export const moviesFeed = sqliteTable("movies_feed", {
+  tmdbId: integer("tmdb_id").primaryKey(),
+  title: text("title").notNull(),
+  year: integer("year"),
+  posterPath: text("poster_path"),
+  overview: text("overview"),
+  popularity: real("popularity").notNull().default(0),
+  theatricalAt: text("theatrical_at"), // US theatrical release (ISO date)
+  digitalAt: text("digital_at"), // US digital/streaming release (ISO date)
+  fetchedAt: text("fetched_at").notNull(),
+});
+
+// User-tracked movies: survive feed rebuilds; release dates refreshed by cron
+// so "waiting for digital" flips to a date the moment TMDB learns it.
+export const trackedMovies = sqliteTable("tracked_movies", {
+  tmdbId: integer("tmdb_id").primaryKey(),
+  title: text("title").notNull(),
+  year: integer("year"),
+  posterPath: text("poster_path"),
+  theatricalAt: text("theatrical_at"),
+  digitalAt: text("digital_at"),
+  trackedAt: text("tracked_at").notNull(),
+});
+
 // ── Plex library mirror ─────────────────────────────────────────────────
 // Backfilled from a Plex database export, kept current by the Plex webhook
 // (library.new). tvmazeShowId links a Plex show to our shows table when a
@@ -148,4 +175,5 @@ export type Show = typeof shows.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
 export type Watched = typeof watched.$inferSelect;
 export type AiringShow = typeof airing.$inferSelect;
+export type MovieFeedItem = typeof moviesFeed.$inferSelect;
 export type SimilarShow = typeof similar.$inferSelect;

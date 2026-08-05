@@ -104,3 +104,49 @@ export function getTvVideos(tmdbId: number): Promise<TmdbVideo[]> {
 export function tmdbPosterUrl(posterPath: string | null, size = "w185"): string | null {
   return posterPath ? `https://image.tmdb.org/t/p/${size}${posterPath}` : null;
 }
+
+export interface TmdbMovieSummary {
+  id: number;
+  title: string;
+  release_date: string | null;
+  overview: string | null;
+  poster_path: string | null;
+  popularity: number;
+}
+
+/** Popular movies with a US theatrical or digital release inside the window. */
+export async function discoverUsMovies(
+  fromIso: string,
+  toIso: string,
+  pages = 3
+): Promise<TmdbMovieSummary[]> {
+  const out: TmdbMovieSummary[] = [];
+  for (let page = 1; page <= pages; page++) {
+    const r = await get<{ results: TmdbMovieSummary[] }>(
+      `/discover/movie?region=US&with_release_type=3|4&release_date.gte=${fromIso}` +
+        `&release_date.lte=${toIso}&sort_by=popularity.desc&with_original_language=en&page=${page}`
+    );
+    out.push(...r.results);
+    if (r.results.length < 20) break;
+  }
+  return out;
+}
+
+/** Earliest US theatrical (type 2/3) and digital (type 4) release dates. */
+export async function getUsReleaseDates(
+  tmdbId: number
+): Promise<{ theatrical: string | null; digital: string | null }> {
+  const r = await get<{
+    results: { iso_3166_1: string; release_dates: { type: number; release_date: string }[] }[];
+  }>(`/movie/${tmdbId}/release_dates`);
+  const us = r.results.find((x) => x.iso_3166_1 === "US");
+  let theatrical: string | null = null;
+  let digital: string | null = null;
+  for (const rd of us?.release_dates ?? []) {
+    const date = rd.release_date?.slice(0, 10) ?? null;
+    if (!date) continue;
+    if ((rd.type === 2 || rd.type === 3) && (!theatrical || date < theatrical)) theatrical = date;
+    if (rd.type === 4 && (!digital || date < digital)) digital = date;
+  }
+  return { theatrical, digital };
+}

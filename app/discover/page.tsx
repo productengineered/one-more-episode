@@ -21,13 +21,15 @@ const RENDER_CAP = 200;
 async function loadAiring() {
   let rows = await db.select().from(airing).orderBy(asc(airing.nextAirAt));
   if (!rows.length) {
-    // First visit: build the table inline (one big TVmaze request, a few seconds).
+    // First visit: build the table inline (one big TVmaze request, a few
+    // seconds). revalidatePath can't run during render, so ignore the error
+    // and re-read the table unconditionally.
     try {
       await refreshAiring();
-      rows = await db.select().from(airing).orderBy(asc(airing.nextAirAt));
     } catch {
       // offline — page renders its empty state
     }
+    rows = await db.select().from(airing).orderBy(asc(airing.nextAirAt));
   }
   return rows;
 }

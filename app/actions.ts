@@ -6,10 +6,17 @@ import { cookies } from "next/headers";
 import { authEnabled, SESSION_COOKIE, sessionToken, sha256Hex } from "@/lib/auth";
 import { getStoredPasswordHash, isAuthenticated } from "@/lib/auth-server";
 import { db } from "@/lib/db";
-import { airing, episodes, shows, watched } from "@/lib/db/schema";
+import { airing, episodes, moviesFeed, shows, trackedMovies, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
 import { deleteSetting, setSetting } from "@/lib/settings";
-import { findTvByExternal, getTvExternalIds, getTvVideos, validateCredential } from "@/lib/tmdb";
+import {
+  discoverUsMovies,
+  findTvByExternal,
+  getTvExternalIds,
+  getTvVideos,
+  getUsReleaseDates,
+  validateCredential,
+} from "@/lib/tmdb";
 import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/tvmaze";
 
 function revalidateAll() {
@@ -176,6 +183,82 @@ export async function refreshAiring() {
   }
   revalidateAll();
   return { count: rows.length };
+}
+
+/**
+ * Rebuild the movies feed: popular US releases (60 days back, 120 ahead) with
+ * their theatrical/digital dates, then refresh dates on tracked movies so
+ * "waiting for digital" resolves automatically.
+ */
+export async function refreshMovies() {
+  const from = new Date(Date.now() - 60 * 86400_000).toISOString().slice(0, 10);
+  const to = new Date(Date.now() + 120 * 86400_000).toISOString().slice(0, 10);
+  const found = await discoverUsMovies(from, to);
+  const fetchedAt = new Date().toISOString();
+
+  const rows: (typeof moviesFeed.$inferInsert)[] = [];
+  for (let i = 0; i < found.length; i += 10) {
+    const batch = found.slice(i, i + 10);
+    const dates = await Promise.all(batch.map((m) => getUsReleaseDates(m.id).catch(() => null)));
+    batch.forEach((m, j) => {
+      const d = dates[j];
+      if (!d || (!d.theatrical && !d.digital)) return;
+      rows.push({
+        tmdbId: m.id,
+        title: m.title,
+        year: m.release_date ? Number(m.release_date.slice(0, 4)) : null,
+        posterPath: m.poster_path,
+        overview: m.overview,
+        popularity: m.popularity,
+        theatricalAt: d.theatrical,
+        digitalAt: d.digital,
+        fetchedAt,
+      });
+    });
+  }
+
+  await db.delete(moviesFeed);
+  for (let i = 0; i < rows.length; i += 50) {
+    await db.insert(moviesFeed).values(rows.slice(i, i + 50));
+  }
+
+  // Keep tracked movies' dates current even after they age out of the feed.
+  const tracked = await db.select().from(trackedMovies);
+  for (const t of tracked) {
+    const d = await getUsReleaseDates(t.tmdbId).catch(() => null);
+    if (d) {
+      await db
+        .update(trackedMovies)
+        .set({ theatricalAt: d.theatrical, digitalAt: d.digital })
+        .where(eq(trackedMovies.tmdbId, t.tmdbId));
+    }
+  }
+
+  revalidateAll();
+  return { count: rows.length, tracked: tracked.length };
+}
+
+export async function trackMovie(tmdbId: number) {
+  const m = await db.select().from(moviesFeed).where(eq(moviesFeed.tmdbId, tmdbId)).limit(1);
+  if (!m.length) return;
+  await db
+    .insert(trackedMovies)
+    .values({
+      tmdbId,
+      title: m[0].title,
+      year: m[0].year,
+      posterPath: m[0].posterPath,
+      theatricalAt: m[0].theatricalAt,
+      digitalAt: m[0].digitalAt,
+      trackedAt: new Date().toISOString(),
+    })
+    .onConflictDoNothing();
+  revalidateAll();
+}
+
+export async function untrackMovie(tmdbId: number) {
+  await db.delete(trackedMovies).where(eq(trackedMovies.tmdbId, tmdbId));
+  revalidateAll();
 }
 
 export async function followShow(tvmazeId: number) {

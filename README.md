@@ -31,6 +31,9 @@ episodes (and brand-new series) are coming.
   from search results, followable in one click
 - **Trailers** *(with TMDB key)* — in-app trailer/teaser playback in a modal,
   on show pages and Discover cards
+- **Movies** *(with TMDB key)* — popular US releases on a timeline: digital
+  date when known, theatrical until then; track a movie to catch the moment
+  it becomes streamable
 - Installable as a PWA; dark UI
 
 ## Quick start (local)

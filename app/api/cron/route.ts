@@ -1,8 +1,8 @@
 import { refreshAiring, refreshStaleShows } from "@/app/actions";
 
-// Nightly reconciliation (vercel.json crons): rebuilds the Discover table from
-// the full TVmaze feed (catches premiere-date changes and cancellations) and
-// re-syncs every stale, still-running library show.
+// Weekly reconciliation (vercel.json crons, Monday morning): rebuilds the
+// Discover table from the full TVmaze feed (catches premiere-date changes and
+// cancellations) and re-syncs every stale, still-running library show.
 export const maxDuration = 300;
 
 export async function GET(req: Request) {

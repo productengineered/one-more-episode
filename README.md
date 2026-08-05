@@ -81,12 +81,12 @@ Or manually: create a Turso database, set `DATABASE_URL` and
 `DATABASE_AUTH_TOKEN` on your Vercel project, run
 `DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:push`, and `vercel --prod`.
 
-**Nightly data refresh:** set a `CRON_SECRET` env var (any random string) and
-the included cron (`vercel.json` → `/api/cron`, daily) rebuilds Discover and
-re-syncs stale running shows — premiere-date changes and cancellations
-reconcile within a day even if you never open the app. Locally, data
-refreshes on use: opening a show re-syncs it if stale, and the Upcoming and
-Discover pages have manual refresh buttons.
+**Weekly data refresh:** set a `CRON_SECRET` env var (any random string) and
+the included cron (`vercel.json` → `/api/cron`, Monday mornings) rebuilds
+Discover and re-syncs stale running shows — premiere-date changes and
+cancellations reconcile even if you never open the app. Data also refreshes
+on use: opening a show re-syncs it if stale, and the Upcoming and Discover
+pages have manual refresh buttons.
 
 > **Important:** One More Episode is a single-user app with no login. On a
 > public deployment, enable **Settings → Deployment Protection → Vercel

@@ -1,6 +1,6 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { plexEpisodes, plexMovies, plexShows, shows } from "@/lib/db/schema";
+import { episodes, plexEpisodes, plexMovies, plexShows, shows, watched } from "@/lib/db/schema";
 
 // Plex webhook receiver. Plex can't send custom headers, so auth rides in the
 // URL: /api/plex?secret=PLEX_WEBHOOK_SECRET. Payload arrives as
@@ -47,6 +47,62 @@ export async function POST(req: Request) {
     payload = JSON.parse(String(form.get("payload")));
   } catch {
     return new Response("Bad payload", { status: 400 });
+  }
+
+  // Finished watching on Plex (~90% viewed) -> mark watched here too, so
+  // Watch Next advances on its own. Manual "Mark Played" in Plex does not
+  // fire a webhook — only real playback does.
+  if (payload.event === "media.scrobble" && payload.Metadata?.type === "episode") {
+    const m = payload.Metadata;
+    if (m.parentIndex == null || m.index == null) {
+      return Response.json({ ok: true, ignored: "scrobble-without-numbers" });
+    }
+    let tvmazeShowId: number | null = null;
+    if (m.grandparentRatingKey) {
+      const row = await db
+        .select()
+        .from(plexShows)
+        .where(eq(plexShows.ratingKey, m.grandparentRatingKey))
+        .limit(1);
+      if (row.length) {
+        tvmazeShowId = row[0].tvmazeShowId;
+        if (!tvmazeShowId && m.grandparentTitle) {
+          tvmazeShowId = await matchShowByTitle(m.grandparentTitle);
+          if (tvmazeShowId) {
+            await db
+              .update(plexShows)
+              .set({ tvmazeShowId })
+              .where(eq(plexShows.ratingKey, m.grandparentRatingKey));
+          }
+        }
+      }
+    }
+    if (!tvmazeShowId && m.grandparentTitle) {
+      tvmazeShowId = await matchShowByTitle(m.grandparentTitle);
+    }
+    if (!tvmazeShowId) return Response.json({ ok: true, ignored: "unmatched-show" });
+
+    const ep = await db
+      .select({ id: episodes.id })
+      .from(episodes)
+      .where(
+        and(
+          eq(episodes.showId, tvmazeShowId),
+          eq(episodes.season, m.parentIndex),
+          eq(episodes.number, m.index)
+        )
+      )
+      .limit(1);
+    if (!ep.length) return Response.json({ ok: true, ignored: "unmatched-episode" });
+
+    await db
+      .insert(watched)
+      .values({ episodeId: ep[0].id, showId: tvmazeShowId, watchedAt: new Date().toISOString() })
+      .onConflictDoNothing();
+    return Response.json({
+      ok: true,
+      watched: `${m.grandparentTitle} S${m.parentIndex}E${m.index}`,
+    });
   }
 
   if (payload.event !== "library.new" || !payload.Metadata) {

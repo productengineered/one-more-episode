@@ -58,17 +58,18 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
     .sort((a, b) => Date.parse(a.airstamp!) - Date.parse(b.airstamp!))[0];
   const genres: string[] = show.genres ? JSON.parse(show.genres) : [];
 
-  const tz = await getUserTimezone();
-  const tmdbConfigured = await isTmdbConfigured();
-  const similarShows = tmdbConfigured ? await getSimilarShows(show).catch(() => []) : [];
-  const trailerVideos = tmdbConfigured
-    ? await fetchShowVideos({
-        tmdbId: show.tmdbId,
-        imdbId: show.imdbId,
-        tvdbId: show.tvdbId,
-        tvmazeShowId: show.id,
-      })
-    : [];
+  const [tz, tmdbConfigured] = await Promise.all([getUserTimezone(), isTmdbConfigured()]);
+  const [similarShows, trailerVideos] = tmdbConfigured
+    ? await Promise.all([
+        getSimilarShows(show).catch(() => []),
+        fetchShowVideos({
+          tmdbId: show.tmdbId,
+          imdbId: show.imdbId,
+          tvdbId: show.tvdbId,
+          tvmazeShowId: show.id,
+        }),
+      ])
+    : [[], []];
   const followedNames = new Set(
     (await db.select({ name: showsTable.name }).from(showsTable)).map((s) =>
       s.name.toLowerCase()

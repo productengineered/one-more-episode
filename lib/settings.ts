@@ -1,11 +1,14 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "./db";
 import { settings } from "./db/schema";
 
-export async function getSetting(key: string): Promise<string | null> {
+// cache(): dedupes repeated reads of the same key within one request —
+// several pages ask for the TMDB credential and timezone independently.
+export const getSetting = cache(async (key: string): Promise<string | null> => {
   const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
   return rows[0]?.value ?? null;
-}
+});
 
 export async function setSetting(key: string, value: string) {
   await db

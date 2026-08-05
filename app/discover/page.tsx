@@ -59,9 +59,11 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
     country: get("country"),
   };
 
-  const rows = await loadAiring();
-  const tz = await getUserTimezone();
-  const tmdbConfigured = await isTmdbConfigured();
+  const [rows, tz, tmdbConfigured] = await Promise.all([
+    loadAiring(),
+    getUserTimezone(),
+    isTmdbConfigured(),
+  ]);
   const upcoming = rows.filter((p) => Date.parse(p.nextAirAt) > Date.now() - 86400_000);
 
   let filtered = upcoming;

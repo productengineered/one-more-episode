@@ -10,16 +10,15 @@ import { getSetting } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const storedKey = await getSetting("tmdb_key");
-  const storedTz = await getSetting("timezone");
-  const envKey = process.env.TMDB_READ_ACCESS_TOKEN ?? process.env.TMDB_API_KEY;
-  const savedHint = storedKey ? storedKey.slice(-4) : null;
-
-  const [showCount, episodeCount, watchedCount] = await Promise.all([
+  const [storedKey, storedTz, showCount, episodeCount, watchedCount] = await Promise.all([
+    getSetting("tmdb_key"),
+    getSetting("timezone"),
     db.$count(shows),
     db.$count(episodes),
     db.$count(watched),
   ]);
+  const envKey = process.env.TMDB_READ_ACCESS_TOKEN ?? process.env.TMDB_API_KEY;
+  const savedHint = storedKey ? storedKey.slice(-4) : null;
 
   return (
     <div className="max-w-2xl space-y-8">

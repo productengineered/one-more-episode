@@ -23,19 +23,15 @@ function epOrder(a: Episode, b: Episode): number {
 
 /** Progress + next-episode info for every followed show. */
 export async function getAllProgress(): Promise<ShowProgress[]> {
-  const allShows = await db
-    .select()
-    .from(shows)
-    .where(eq(shows.archived, 0))
-    .orderBy(asc(shows.name));
+  // One parallel burst instead of three sequential round-trips — matters when
+  // the database is a network hop away.
+  const activeShowIds = db.select({ id: shows.id }).from(shows).where(eq(shows.archived, 0));
+  const [allShows, allEpisodes, watchedRows] = await Promise.all([
+    db.select().from(shows).where(eq(shows.archived, 0)).orderBy(asc(shows.name)),
+    db.select().from(episodes).where(inArray(episodes.showId, activeShowIds)),
+    db.select().from(watched),
+  ]);
   if (!allShows.length) return [];
-
-  const showIds = allShows.map((s) => s.id);
-  const allEpisodes = await db
-    .select()
-    .from(episodes)
-    .where(inArray(episodes.showId, showIds));
-  const watchedRows = await db.select().from(watched);
   const watchedIds = new Set(watchedRows.map((w) => w.episodeId));
   const lastWatchedByShow = new Map<number, string>();
   for (const w of watchedRows) {
@@ -79,13 +75,13 @@ export interface UpcomingEpisode {
 
 /** Future episodes for followed shows, soonest first. */
 export async function getUpcoming(limitDays = 120): Promise<UpcomingEpisode[]> {
-  const allShows = await db.select().from(shows).where(eq(shows.archived, 0));
+  const activeShowIds = db.select({ id: shows.id }).from(shows).where(eq(shows.archived, 0));
+  const [allShows, allEpisodes] = await Promise.all([
+    db.select().from(shows).where(eq(shows.archived, 0)),
+    db.select().from(episodes).where(inArray(episodes.showId, activeShowIds)),
+  ]);
   if (!allShows.length) return [];
   const byId = new Map(allShows.map((s) => [s.id, s]));
-  const allEpisodes = await db
-    .select()
-    .from(episodes)
-    .where(inArray(episodes.showId, allShows.map((s) => s.id)));
 
   const now = Date.now();
   const cutoff = now + limitDays * 86400_000;
@@ -100,14 +96,13 @@ export async function getUpcoming(limitDays = 120): Promise<UpcomingEpisode[]> {
 }
 
 export async function getShowDetail(showId: number) {
-  const show = await db.select().from(shows).where(eq(shows.id, showId)).limit(1);
+  const [show, eps, watchedRows] = await Promise.all([
+    db.select().from(shows).where(eq(shows.id, showId)).limit(1),
+    db.select().from(episodes).where(eq(episodes.showId, showId)),
+    db.select().from(watched).where(eq(watched.showId, showId)),
+  ]);
   if (!show.length) return null;
-  const eps = await db
-    .select()
-    .from(episodes)
-    .where(eq(episodes.showId, showId));
   eps.sort(epOrder);
-  const watchedRows = await db.select().from(watched).where(eq(watched.showId, showId));
   return {
     show: show[0],
     episodes: eps,

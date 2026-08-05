@@ -9,8 +9,7 @@ import { getUserTimezone } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 export default async function WatchNextPage() {
-  const tz = await getUserTimezone();
-  const progress = await getAllProgress();
+  const [tz, progress] = await Promise.all([getUserTimezone(), getAllProgress()]);
   const behind = progress
     .filter((p) => p.nextUnwatched)
     .sort((a, b) => {

@@ -101,6 +101,22 @@ export function getTvVideos(tmdbId: number): Promise<TmdbVideo[]> {
   );
 }
 
+export interface TmdbTvDetails {
+  name: string;
+  first_air_date: string | null;
+  overview: string | null;
+  status: string | null;
+  number_of_seasons: number | null;
+  number_of_episodes: number | null;
+  vote_average: number | null;
+  genres: { name: string }[];
+  networks: { name: string }[];
+}
+
+export function getTvDetails(tmdbId: number): Promise<TmdbTvDetails> {
+  return get<TmdbTvDetails>(`/tv/${tmdbId}`, 86400);
+}
+
 export function getMovieVideos(tmdbId: number): Promise<TmdbVideo[]> {
   return get<{ results: TmdbVideo[] }>(`/movie/${tmdbId}/videos`, 86400).then(
     (r) => r.results ?? []

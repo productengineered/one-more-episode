@@ -13,6 +13,7 @@ import {
   discoverUsMovies,
   findTvByExternal,
   getMovieVideos,
+  getTvDetails,
   getTvExternalIds,
   getTvVideos,
   getUsReleaseDates,
@@ -346,6 +347,41 @@ export async function fetchShowVideos(input: {
       .slice(0, 25); // big franchises have 80+ clips; keep the modal sane
   } catch {
     return [];
+  }
+}
+
+export interface TvInfo {
+  genres: string[];
+  status: string | null;
+  seasons: number | null;
+  episodes: number | null;
+  network: string | null;
+  firstAirYear: string | null;
+  overview: string | null;
+  rating: number | null;
+}
+
+/** Details + videos for the similar-show info modal, one round trip. */
+export async function fetchTvInfo(
+  tmdbId: number
+): Promise<{ info: TvInfo | null; videos: ShowVideo[] }> {
+  try {
+    const [d, videos] = await Promise.all([getTvDetails(tmdbId), fetchShowVideos({ tmdbId })]);
+    return {
+      info: {
+        genres: d.genres?.map((g) => g.name) ?? [],
+        status: d.status ?? null,
+        seasons: d.number_of_seasons ?? null,
+        episodes: d.number_of_episodes ?? null,
+        network: d.networks?.[0]?.name ?? null,
+        firstAirYear: d.first_air_date?.slice(0, 4) ?? null,
+        overview: d.overview ?? null,
+        rating: d.vote_average ?? null,
+      },
+      videos,
+    };
+  } catch {
+    return { info: null, videos: [] };
   }
 }
 

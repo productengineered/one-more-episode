@@ -114,7 +114,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Discover</h1>
           <p className="text-sm text-zinc-500">
-            {upcoming.length.toLocaleString()} English-language shows airing in the next 90
+            {upcoming.length.toLocaleString()} English-language shows airing in the next 180
             days{fetchedAt && ` · updated ${relativeAge(fetchedAt)}`}
           </p>
         </div>

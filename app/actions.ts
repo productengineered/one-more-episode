@@ -129,13 +129,13 @@ export async function refreshStaleShows() {
 
 /**
  * Rebuild the airing table from TVmaze's full future-schedule feed: every
- * English-language show with an episode in the next 90 days, keeping each
+ * English-language show with an episode in the next 180 days, keeping each
  * show's earliest upcoming episode. S1E1 earliest = a series premiere.
  */
 export async function refreshAiring() {
   const items = await getFullSchedule();
   const now = Date.now();
-  const horizon = now + 90 * 86400_000;
+  const horizon = now + 180 * 86400_000;
   const fetchedAt = new Date().toISOString();
 
   const byShow = new Map<number, typeof airing.$inferInsert>();

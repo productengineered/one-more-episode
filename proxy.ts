@@ -7,6 +7,7 @@ export async function proxy(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
   if (pathname === "/login") return NextResponse.next();
+  if (pathname === "/api/cron") return NextResponse.next(); // enforces its own CRON_SECRET
   if (req.cookies.get(SESSION_COOKIE)?.value === expected) return NextResponse.next();
 
   const url = req.nextUrl.clone();

@@ -16,6 +16,7 @@ export function SimilarCard({
   tmdbId,
   name,
   year,
+  overview,
   posterUrl,
   voteAverage,
   following,
@@ -23,6 +24,7 @@ export function SimilarCard({
   tmdbId: number;
   name: string;
   year: string | null;
+  overview: string | null;
   posterUrl: string | null;
   voteAverage: number | null;
   following: boolean;
@@ -43,44 +45,55 @@ export function SimilarCard({
   };
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5 transition-colors hover:border-zinc-600">
-      <button
-        onClick={openModal}
-        disabled={pending}
-        title="More about this show"
-        className="group flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-60"
-      >
-        {posterUrl ? (
-          <Image
-            src={posterUrl}
-            alt=""
-            width={56}
-            height={84}
-            className="h-[84px] w-14 shrink-0 rounded-md object-cover"
-          />
-        ) : (
-          <div className="h-[84px] w-14 shrink-0 rounded-md bg-zinc-800" />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium group-hover:text-violet-300">
-            {pending ? "Loading…" : name}
-          </p>
-          <p className="text-xs text-zinc-500">
-            {[year, voteAverage ? `★ ${voteAverage.toFixed(1)}` : null]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+    <li className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5 transition-colors hover:border-zinc-600">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={openModal}
+          disabled={pending}
+          title="More about this show"
+          className="group flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-60"
+        >
+          {posterUrl ? (
+            <Image
+              src={posterUrl}
+              alt=""
+              width={56}
+              height={84}
+              className="h-[84px] w-14 shrink-0 rounded-md object-cover"
+            />
+          ) : (
+            <div className="h-[84px] w-14 shrink-0 rounded-md bg-zinc-800" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium group-hover:text-violet-300">
+              {pending ? "Loading…" : name}
+            </p>
+            <p className="text-xs text-zinc-500">
+              {[year, voteAverage ? `★ ${voteAverage.toFixed(1)}` : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
+        </button>
+        <div className="shrink-0">
+          {following ? (
+            <span className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-400">
+              ✓ Following
+            </span>
+          ) : (
+            <FollowTmdbButton tmdbId={tmdbId} />
+          )}
         </div>
-      </button>
-      <div className="shrink-0">
-        {following ? (
-          <span className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-400">
-            ✓ Following
-          </span>
-        ) : (
-          <FollowTmdbButton tmdbId={tmdbId} />
-        )}
       </div>
+      {overview && (
+        <button
+          onClick={openModal}
+          disabled={pending}
+          className="mt-1.5 block w-full text-left disabled:opacity-60"
+        >
+          <p className="line-clamp-3 text-xs leading-relaxed text-zinc-400">{overview}</p>
+        </button>
+      )}
       {open && data && (
         <InfoModal
           name={name}

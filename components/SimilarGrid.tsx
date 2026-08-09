@@ -25,6 +25,7 @@ export function SimilarGrid({
           tmdbId={s.tmdbId}
           name={s.name}
           year={s.year}
+          overview={s.overview}
           posterUrl={tmdbPosterUrl(s.posterPath)}
           voteAverage={s.voteAverage}
           following={followedNames.has(s.name.toLowerCase())}

@@ -57,3 +57,31 @@ https://github.com/productengineered/one-more-episode
   (see lib/queries.ts getAllProgress), batch independent awaits with
   Promise.all, and keep Vercel functions in the same region as the DB
   (vercel.json "regions").
+
+## Session handoff & current state (updated 2026-08-09)
+
+- **Read `planning/HANDOFF.md` first** (gitignored, local-only): full feature
+  map, infra/secrets locations, and the current task queue. Next requested
+  task: **mobile optimization** (site is desktop-only today). RSS pipeline
+  integration is analyzed but ON HOLD — don't build unless asked.
+- Deploy sequence: `npx tsc --noEmit` → commit → push → `vercel --prod`.
+  Production is https://tv.brandondohman.com (Vercel functions pinned to pdx1,
+  same region as the Turso DB — keep them together).
+- Turso: always use the https:// database URL (websocket hangs). drizzle-kit
+  push works locally but hangs against Turso — apply remote DDL via the
+  /v2/pipeline HTTP endpoint instead. Avoid table renames (interactive prompt);
+  create new + drop old.
+- If freshly-edited code doesn't appear in the running dev server, restart
+  `npm run dev` before debugging further — Turbopack occasionally serves a
+  stale compile.
+- The owner's real library lives in BOTH data/tv.db (local) and Turso (prod) —
+  separate copies. Any test mutation must be reverted precisely (exact ids and
+  timestamps), never by broad deletes.
+- Auth model: AUTH_SECRET env signs the session cookie; the password lives in
+  the DB (settings.app_password_hash, sha256, changeable in Settings). To make
+  authenticated curl checks, HMAC-SHA256 the string
+  `one-more-episode-session-v1` with AUTH_SECRET (hex) and send it as the
+  `ome_session` cookie.
+- Feature gating: TVmaze features work keyless; TMDB-backed features (similar,
+  trailers, movies, info modals) must degrade to a "add a TMDB key in
+  Settings" CTA, never break.

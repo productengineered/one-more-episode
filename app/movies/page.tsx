@@ -147,7 +147,7 @@ export default async function MoviesPage() {
                         </p>
                       )}
                       {inPlex.has(t.tmdbId) && (
-                        <p className="text-sm font-semibold text-amber-400">» In Plex</p>
+                        <p className="text-sm font-semibold text-amber-400">» On Plex</p>
                       )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -225,7 +225,7 @@ export default async function MoviesPage() {
                       )}
                       <span className="text-zinc-500">{formatDate(displayDate(m))}</span>
                       {inPlex.has(m.tmdbId) && (
-                        <span className="font-semibold text-amber-400">» In Plex</span>
+                        <span className="font-semibold text-amber-400">» On Plex</span>
                       )}
                     </p>
                   </div>
@@ -247,7 +247,7 @@ export default async function MoviesPage() {
                       <p className="text-zinc-600">theaters {formatDate(m.theatricalAt)}</p>
                     )}
                     {inPlex.has(m.tmdbId) && (
-                      <p className="mt-0.5 text-sm font-semibold text-amber-400">» In Plex</p>
+                      <p className="mt-0.5 text-sm font-semibold text-amber-400">» On Plex</p>
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">

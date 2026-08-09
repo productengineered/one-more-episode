@@ -154,7 +154,7 @@ export default async function UpcomingPage() {
                       <span className="truncate text-zinc-600">{show.network}</span>
                     )}
                     {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (
-                      <span className="font-semibold text-amber-400">» In Plex</span>
+                      <span className="font-semibold text-amber-400">» On Plex</span>
                     ) : (
                       plexShowIds.has(show.id) && (
                         <span className="text-amber-700">» Plex</span>
@@ -170,7 +170,7 @@ export default async function UpcomingPage() {
                       className="mt-0.5 text-sm font-semibold text-amber-400"
                       title="Episode is in your Plex"
                     >
-                      » In Plex
+                      » On Plex
                     </p>
                   ) : (
                     plexShowIds.has(show.id) && (

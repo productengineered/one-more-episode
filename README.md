@@ -26,7 +26,8 @@ episodes (and brand-new series) are coming.
   sort
 - **Shows** — your library with per-show progress, season-level and
   mark-all-watched actions, episode lists, auto-refreshing air dates
-- **Add** — search and follow any show
+- **Add** — search any show, click through to a full preview (seasons,
+  episodes, air dates, trailer), follow in one tap
 - **Similar** *(with TMDB key)* — "more like this" on every show page and
   from search results, followable in one click
 - **Trailers** *(with TMDB key)* — in-app trailer/teaser playback in a modal,
@@ -77,23 +78,32 @@ and [Vercel CLI](https://vercel.com/docs/cli) installed:
 
 ```bash
 npm run deploy    # guided: creates the Turso DB (seeded from your local
-                  # library if you want), pushes schema, sets env vars, deploys
+                  # library if you want), pushes schema, sets env vars —
+                  # including login + cron secrets — and deploys
 ```
 
-Or manually: create a Turso database, set `DATABASE_URL` and
-`DATABASE_AUTH_TOKEN` on your Vercel project, run
-`DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:push`, and `vercel --prod`.
+Or manually: create a Turso database, set these env vars on your Vercel
+project, run `DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:push`,
+and `vercel --prod`:
 
-**Weekly data refresh:** set a `CRON_SECRET` env var (any random string) and
-the included cron (`vercel.json` → `/api/cron`, Monday mornings) rebuilds
-Discover and re-syncs stale running shows — premiere-date changes and
-cancellations reconcile even if you never open the app. Data also refreshes
-on use: opening a show re-syncs it if stale, and the Upcoming and Discover
-pages have manual refresh buttons.
+| Env var | What it does |
+| --- | --- |
+| `DATABASE_URL` | Turso database URL (`https://…`) |
+| `DATABASE_AUTH_TOKEN` | Turso auth token |
+| `AUTH_SECRET` | any random string — turns on the login gate |
+| `CRON_SECRET` | any random string — lets the weekly cron authenticate |
 
-> **Important:** One More Episode is a single-user app with no login. On a
-> public deployment, enable **Settings → Deployment Protection → Vercel
-> Authentication** in the Vercel dashboard so only you can reach it.
+**Login:** with `AUTH_SECRET` set (the deploy script generates one for you),
+the app shows a login gate and asks the first visitor to create a password.
+The password is stored hashed in your database and changeable in Settings.
+Without `AUTH_SECRET` — e.g. running locally — there's no login.
+
+**Weekly data refresh:** with `CRON_SECRET` set (the deploy script handles
+this too), the included cron (`vercel.json` → `/api/cron`, Monday mornings)
+rebuilds Discover and re-syncs stale running shows — premiere-date changes
+and cancellations reconcile even if you never open the app. Data also
+refreshes on use: opening a show re-syncs it if stale, and the Upcoming and
+Discover pages have manual refresh buttons.
 
 ## Commands
 

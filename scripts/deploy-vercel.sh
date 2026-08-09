@@ -51,13 +51,28 @@ vercel link
 printf '%s' "$DB_URL" | vercel env add DATABASE_URL production
 printf '%s' "$DB_TOKEN" | vercel env add DATABASE_AUTH_TOKEN production
 
+# AUTH_SECRET turns on the login gate and signs the session cookie; the
+# password itself is created by the first visitor and lives in the database.
+if printf '%s' "$(openssl rand -hex 32)" | vercel env add AUTH_SECRET production 2>/dev/null; then
+  echo "  AUTH_SECRET set — the app will ask you to create a password on first visit"
+else
+  echo "  AUTH_SECRET already set — keeping the existing one"
+fi
+
+# CRON_SECRET lets the Monday cron (vercel.json → /api/cron) authenticate;
+# Vercel sends it as a bearer token automatically.
+if printf '%s' "$(openssl rand -hex 32)" | vercel env add CRON_SECRET production 2>/dev/null; then
+  echo "  CRON_SECRET set — weekly data refresh enabled"
+else
+  echo "  CRON_SECRET already set — keeping the existing one"
+fi
+
 echo "→ Deploying…"
 vercel --prod
 
 echo
-echo "✔ Deployed. Two follow-ups worth doing:"
-echo "  1. This app has no login. In the Vercel dashboard, enable"
-echo "     Settings → Deployment Protection → Vercel Authentication"
-echo "     so only you can open it."
-echo "  2. Add your TMDB key on the deployed app's Settings page (it's stored"
-echo "     in the database, so it survives redeploys)."
+echo "✔ Deployed. Two follow-ups:"
+echo "  1. Open the app — it will ask you to create your login password"
+echo "     (changeable later in Settings)."
+echo "  2. Add a free TMDB key on the Settings page to unlock movies, trailers,"
+echo "     and recommendations (stored in the database, survives redeploys)."

@@ -30,7 +30,7 @@ export function ShowsSearch({ initial }: { initial: string }) {
         }, 300);
       }}
       placeholder="Filter your shows…"
-      className="w-56 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none placeholder:text-zinc-600 focus:border-violet-500"
+      className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none placeholder:text-zinc-600 focus:border-violet-500 sm:w-56 sm:flex-none"
     />
   );
 }

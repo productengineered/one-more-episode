@@ -15,7 +15,7 @@ export function WatchedButton({
   const [pending, startTransition] = useTransition();
   const base =
     size === "sm"
-      ? "h-7 w-7 rounded-full text-xs"
+      ? "h-9 w-9 rounded-full text-xs sm:h-7 sm:w-7"
       : "h-9 rounded-lg px-3 text-sm font-medium";
   return (
     <button

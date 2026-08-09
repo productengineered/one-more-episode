@@ -23,7 +23,7 @@ export default async function WatchNextPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
         <h1 className="text-xl font-semibold tracking-tight">Watch Next</h1>
         <p className="text-sm text-zinc-500">
           {behind.length} shows to catch up on · {caughtUp} up to date
@@ -40,7 +40,7 @@ export default async function WatchNextPage() {
         </p>
       )}
 
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {behind.map(({ show, nextUnwatched, airedCount, watchedCount }) => {
           const ep = nextUnwatched!;
           const remaining = airedCount - watchedCount;

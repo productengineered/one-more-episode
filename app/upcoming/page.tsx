@@ -3,7 +3,7 @@ import Link from "next/link";
 import { eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { plexEpisodes, plexShows } from "@/lib/db/schema";
-import { dayLabel, epCode, formatDateTime, relativeDays } from "@/lib/format";
+import { dayLabel, epCode, formatDateTime, formatTime, relativeDays } from "@/lib/format";
 import { getAllProgress, getUpcoming } from "@/lib/queries";
 import { getUserTimezone } from "@/lib/settings";
 import { RefreshAllButton } from "@/components/RefreshAllButton";
@@ -146,8 +146,23 @@ export default async function UpcomingPage() {
                     </span>{" "}
                     {episode.name ?? "TBA"}
                   </p>
+                  <p className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500 sm:hidden">
+                    {formatTime(episode.airstamp, tz) && (
+                      <span>{formatTime(episode.airstamp, tz)}</span>
+                    )}
+                    {show.network && (
+                      <span className="truncate text-zinc-600">{show.network}</span>
+                    )}
+                    {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (
+                      <span className="font-semibold text-amber-400">» In Plex</span>
+                    ) : (
+                      plexShowIds.has(show.id) && (
+                        <span className="text-amber-700">» Plex</span>
+                      )
+                    )}
+                  </p>
                 </div>
-                <div className="shrink-0 text-right text-xs text-zinc-500">
+                <div className="hidden shrink-0 text-right text-xs text-zinc-500 sm:block">
                   <p>{formatDateTime(episode.airstamp, tz)}</p>
                   {show.network && <p className="text-zinc-600">{show.network}</p>}
                   {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (

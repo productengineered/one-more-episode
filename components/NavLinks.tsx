@@ -15,7 +15,7 @@ const links = [
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-1 text-sm">
+    <nav className="hidden items-center gap-1 text-sm sm:flex">
       {links.map((l) => {
         const active =
           l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);

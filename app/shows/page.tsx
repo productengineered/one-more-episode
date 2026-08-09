@@ -82,9 +82,9 @@ export default async function ShowsPage({ searchParams }: PageProps<"/shows">) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Shows</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
           <ShowsSearch initial={q} />
-          <p className="text-sm text-zinc-500">
+          <p className="shrink-0 text-sm text-zinc-500">
             {q ? `${progress.length} matching` : `${progress.length} followed`}
           </p>
         </div>

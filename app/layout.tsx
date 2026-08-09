@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import "./globals.css";
+import { BottomTabs } from "@/components/BottomTabs";
 import { NavLinks } from "@/components/NavLinks";
 import { ScrollMemory } from "@/components/ScrollMemory";
 import { isAuthenticated } from "@/lib/auth-server";
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#09090b",
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -48,17 +50,35 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             {authed && <NavLinks />}
             {authed && (
-              <Link
-                href="/settings"
-                aria-label="Settings"
-                className="ml-auto grid h-10 w-10 place-items-center rounded-full text-2xl text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-              >
-                ⚙
-              </Link>
+              <div className="ml-auto flex items-center gap-1">
+                <Link
+                  href="/add"
+                  aria-label="Add show"
+                  className="grid h-10 w-10 place-items-center rounded-full text-2xl text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100 sm:hidden"
+                >
+                  +
+                </Link>
+                <Link
+                  href="/settings"
+                  aria-label="Settings"
+                  className="grid h-10 w-10 place-items-center rounded-full text-2xl text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+                >
+                  ⚙
+                </Link>
+              </div>
             )}
           </div>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+        <main
+          className={`mx-auto w-full max-w-5xl flex-1 px-4 pt-6 ${
+            authed
+              ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-6"
+              : "pb-6"
+          }`}
+        >
+          {children}
+        </main>
+        {authed && <BottomTabs />}
         <Suspense fallback={null}>
           <ScrollMemory />
         </Suspense>

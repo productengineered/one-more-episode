@@ -180,7 +180,7 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
                           await setSeasonWatched(showId, season, !allWatched);
                         }}
                       >
-                        <button className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-200">
+                        <button className="rounded-md border border-zinc-700 px-2.5 py-1.5 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 sm:px-2 sm:py-1">
                           {allWatched ? "Unwatch season" : "Mark season watched"}
                         </button>
                       </form>
@@ -204,12 +204,19 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
                         <span className="w-8 shrink-0 text-right font-mono text-xs text-zinc-600">
                           {e.number ?? "SP"}
                         </span>
-                        <span
-                          className={`min-w-0 flex-1 truncate text-sm ${
-                            isWatched ? "text-zinc-500" : "text-zinc-200"
-                          }`}
-                        >
-                          {e.name ?? "TBA"}
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block truncate text-sm ${
+                              isWatched ? "text-zinc-500" : "text-zinc-200"
+                            }`}
+                          >
+                            {e.name ?? "TBA"}
+                          </span>
+                          {(e.airstamp ?? e.airdate) && (
+                            <span className="block text-[11px] text-zinc-600 sm:hidden">
+                              {formatDate(e.airstamp ?? e.airdate, tz)}
+                            </span>
+                          )}
                         </span>
                         <span className="hidden shrink-0 text-xs text-zinc-600 sm:block">
                           {formatDate(e.airstamp ?? e.airdate, tz)}

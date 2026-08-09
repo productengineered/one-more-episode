@@ -37,6 +37,16 @@ export function formatDateTime(iso: string | null, tz?: string): string {
   });
 }
 
+/** Time-only ("8:00 PM"), for rows already grouped under a day heading. */
+export function formatTime(iso: string | null, tz?: string): string {
+  if (!iso || DATE_ONLY.test(iso)) return "";
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: tz,
+  });
+}
+
 /** Grouping label like "Wednesday, August 5" in the user's timezone. */
 export function dayLabel(iso: string, tz?: string): string {
   return new Date(iso).toLocaleDateString("en-US", {

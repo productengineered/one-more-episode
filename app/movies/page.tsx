@@ -118,7 +118,7 @@ export default async function MoviesPage() {
       {tracked.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold text-rose-300">★ Tracking</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tracked
               .slice()
               .sort((a, b) => (displayDate(a) ?? "9999").localeCompare(displayDate(b) ?? "9999"))
@@ -210,8 +210,26 @@ export default async function MoviesPage() {
                       {m.year && <span className="ml-2 text-sm text-zinc-500">{m.year}</span>}
                     </p>
                     <p className="line-clamp-1 text-sm text-zinc-500">{m.overview}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:hidden">
+                      {digital ? (
+                        <span className="rounded-full bg-rose-500/20 px-2 py-0.5 font-semibold text-rose-300">
+                          DIGITAL
+                        </span>
+                      ) : (
+                        <span
+                          className="rounded-full border border-zinc-700 px-2 py-0.5 text-zinc-400"
+                          title="Theatrical release — no digital date announced yet"
+                        >
+                          THEATERS
+                        </span>
+                      )}
+                      <span className="text-zinc-500">{formatDate(displayDate(m))}</span>
+                      {inPlex.has(m.tmdbId) && (
+                        <span className="font-semibold text-amber-400">» In Plex</span>
+                      )}
+                    </p>
                   </div>
-                  <div className="shrink-0 text-right text-xs">
+                  <div className="hidden shrink-0 text-right text-xs sm:block">
                     {digital ? (
                       <span className="rounded-full bg-rose-500/20 px-2 py-0.5 font-semibold text-rose-300">
                         DIGITAL

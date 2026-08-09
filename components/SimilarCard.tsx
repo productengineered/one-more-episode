@@ -148,7 +148,7 @@ function InfoModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
+        className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between gap-3">

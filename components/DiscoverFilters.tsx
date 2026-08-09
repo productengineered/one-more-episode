@@ -85,7 +85,7 @@ export function DiscoverFilters({
         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200"
     }`;
   const select =
-    "max-w-44 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-500";
+    "min-w-0 flex-1 sm:flex-none sm:max-w-44 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-500";
 
   return (
     <div className="space-y-3">
@@ -95,9 +95,9 @@ export function DiscoverFilters({
           value={q}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Filter by name…"
-          className="w-48 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none placeholder:text-zinc-600 focus:border-violet-500"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none placeholder:text-zinc-600 focus:border-violet-500 sm:w-48"
         />
-        <span className="mx-1 h-4 w-px bg-zinc-800" />
+        <span className="mx-1 hidden h-4 w-px bg-zinc-800 sm:block" />
         <button className={chip(!current.stage)} onClick={() => setParam("stage", "")}>
           All shows
         </button>
@@ -133,7 +133,8 @@ export function DiscoverFilters({
         <button className={chip(current.sort === "buzz")} onClick={() => setParam("sort", "buzz")}>
           By buzz
         </button>
-        <span className="mx-1 h-4 w-px bg-zinc-800" />
+        <span className="mx-1 hidden h-4 w-px bg-zinc-800 sm:block" />
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:flex-wrap">
         <select
           className={select}
           value={current.platform}
@@ -191,6 +192,7 @@ export function DiscoverFilters({
             </option>
           ))}
         </select>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-zinc-600">Type</span>

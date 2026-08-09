@@ -18,7 +18,7 @@ export function SimilarGrid({
   followedNames: Set<string>;
 }) {
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {items.map((s) => (
         <SimilarCard
           key={s.tmdbId}

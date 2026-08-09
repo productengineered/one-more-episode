@@ -43,27 +43,25 @@ export function SimilarCard({
   };
 
   return (
-    <li className="flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-600 sm:flex-row sm:items-center sm:gap-3 sm:p-2.5">
+    <li className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5 transition-colors hover:border-zinc-600">
       <button
         onClick={openModal}
         disabled={pending}
         title="More about this show"
-        className="group flex min-w-0 flex-1 flex-col text-left disabled:opacity-60 sm:flex-row sm:items-center sm:gap-3"
+        className="group flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-60"
       >
         {posterUrl ? (
           <Image
-            src={posterUrl.replace("/w185/", "/w342/")}
+            src={posterUrl}
             alt=""
-            width={185}
-            height={278}
-            className="aspect-[2/3] w-full object-cover sm:h-[84px] sm:w-14 sm:shrink-0 sm:rounded-md"
+            width={56}
+            height={84}
+            className="h-[84px] w-14 shrink-0 rounded-md object-cover"
           />
         ) : (
-          <div className="grid aspect-[2/3] w-full place-items-center bg-zinc-800 p-2 text-center text-xs text-zinc-500 sm:h-[84px] sm:w-14 sm:shrink-0 sm:rounded-md sm:p-0 sm:text-[0px]">
-            {name}
-          </div>
+          <div className="h-[84px] w-14 shrink-0 rounded-md bg-zinc-800" />
         )}
-        <div className="min-w-0 flex-1 p-2 sm:p-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium group-hover:text-violet-300">
             {pending ? "Loading…" : name}
           </p>
@@ -74,9 +72,9 @@ export function SimilarCard({
           </p>
         </div>
       </button>
-      <div className="shrink-0 p-2 pt-0 sm:p-0">
+      <div className="shrink-0">
         {following ? (
-          <span className="block rounded-md bg-emerald-500/15 px-2 py-1.5 text-center text-xs text-emerald-400 sm:inline-block sm:py-1 sm:text-left">
+          <span className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs text-emerald-400">
             ✓ Following
           </span>
         ) : (

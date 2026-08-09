@@ -53,32 +53,42 @@ export default async function AddPage({ searchParams }: PageProps<"/add">) {
           return (
             <li
               key={show.id}
-              className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3"
+              className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 transition-colors hover:border-zinc-600"
             >
-              {show.image?.medium ? (
-                <Image
-                  src={show.image.medium}
-                  alt=""
-                  width={56}
-                  height={78}
-                  className="h-[78px] w-14 shrink-0 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="h-[78px] w-14 shrink-0 rounded-lg bg-zinc-800" />
-              )}
+              <Link
+                href={following ? `/shows/${show.id}` : `/add/${show.id}`}
+                className="shrink-0"
+              >
+                {show.image?.medium ? (
+                  <Image
+                    src={show.image.medium}
+                    alt=""
+                    width={56}
+                    height={78}
+                    className="h-[78px] w-14 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="h-[78px] w-14 rounded-lg bg-zinc-800" />
+                )}
+              </Link>
               <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {show.name}
-                  {year && <span className="ml-2 text-sm text-zinc-500">{year}</span>}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {[show.network?.name ?? show.webChannel?.name, show.status]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                <p className="line-clamp-2 pt-1 text-sm text-zinc-400">
-                  {stripHtml(show.summary)}
-                </p>
+                <Link
+                  href={following ? `/shows/${show.id}` : `/add/${show.id}`}
+                  className="group block"
+                >
+                  <p className="font-medium group-hover:text-violet-300">
+                    {show.name}
+                    {year && <span className="ml-2 text-sm text-zinc-500">{year}</span>}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {[show.network?.name ?? show.webChannel?.name, show.status]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  <p className="line-clamp-2 pt-1 text-sm text-zinc-400">
+                    {stripHtml(show.summary)}
+                  </p>
+                </Link>
                 <Link
                   href={`/similar?name=${encodeURIComponent(show.name)}&imdb=${
                     show.externals?.imdb ?? ""

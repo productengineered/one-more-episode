@@ -61,9 +61,10 @@ https://github.com/productengineered/one-more-episode
 ## Session handoff & current state (updated 2026-08-09)
 
 - **Read `planning/HANDOFF.md` first** (gitignored, local-only): full feature
-  map, infra/secrets locations, and the current task queue. Next requested
-  task: **mobile optimization** (site is desktop-only today). RSS pipeline
-  integration is analyzed but ON HOLD — don't build unless asked.
+  map, infra/secrets locations, and the current task queue. Mobile
+  optimization shipped 2026-08-09 (bottom tab bar below `sm`, restacked rows);
+  no task queued. RSS pipeline integration is analyzed but ON HOLD — don't
+  build unless asked.
 - Deploy sequence: `npx tsc --noEmit` → commit → push → `vercel --prod`.
   Production is https://tv.brandondohman.com (Vercel functions pinned to pdx1,
   same region as the Turso DB — keep them together).

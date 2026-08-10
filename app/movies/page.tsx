@@ -209,7 +209,7 @@ export default async function MoviesPage() {
                       {m.title}
                       {m.year && <span className="ml-2 text-sm text-zinc-500">{m.year}</span>}
                     </p>
-                    <p className="line-clamp-1 text-sm text-zinc-500">{m.overview}</p>
+                    <p className="text-sm text-zinc-500">{m.overview}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:hidden">
                       {digital ? (
                         <span className="rounded-full bg-rose-500/20 px-2 py-0.5 font-semibold text-rose-300">

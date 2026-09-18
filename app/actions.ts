@@ -12,12 +12,16 @@ import { deleteSetting, setSetting } from "@/lib/settings";
 import {
   discoverUsMovies,
   findTvByExternal,
+  getMovieDetails,
+  getMovieFull,
   getMovieVideos,
   getTvDetails,
   getTvExternalIds,
   getTvVideos,
   getUsReleaseDates,
   validateCredential,
+  type TmdbVideo,
+  type TmdbWatchProvider,
 } from "@/lib/tmdb";
 import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/tvmaze";
 
@@ -251,19 +255,33 @@ export async function refreshMovies() {
 }
 
 export async function trackMovie(tmdbId: number) {
-  const m = await db.select().from(moviesFeed).where(eq(moviesFeed.tmdbId, tmdbId)).limit(1);
-  if (!m.length) return;
+  const [m] = await db.select().from(moviesFeed).where(eq(moviesFeed.tmdbId, tmdbId)).limit(1);
+  let movie: Omit<typeof trackedMovies.$inferInsert, "tmdbId" | "trackedAt">;
+  if (m) {
+    movie = {
+      title: m.title,
+      year: m.year,
+      posterPath: m.posterPath,
+      theatricalAt: m.theatricalAt,
+      digitalAt: m.digitalAt,
+    };
+  } else {
+    // Search results aren't in the feed — fetch the same fields from TMDB.
+    const [details, dates] = await Promise.all([
+      getMovieDetails(tmdbId),
+      getUsReleaseDates(tmdbId),
+    ]);
+    movie = {
+      title: details.title,
+      year: details.release_date ? Number(details.release_date.slice(0, 4)) : null,
+      posterPath: details.poster_path,
+      theatricalAt: dates.theatrical,
+      digitalAt: dates.digital,
+    };
+  }
   await db
     .insert(trackedMovies)
-    .values({
-      tmdbId,
-      title: m[0].title,
-      year: m[0].year,
-      posterPath: m[0].posterPath,
-      theatricalAt: m[0].theatricalAt,
-      digitalAt: m[0].digitalAt,
-      trackedAt: new Date().toISOString(),
-    })
+    .values({ tmdbId, ...movie, trackedAt: new Date().toISOString() })
     .onConflictDoNothing();
   revalidateAll();
 }
@@ -333,20 +351,97 @@ export async function fetchShowVideos(input: {
       }
     }
     if (!tmdbId) return [];
-    const rank = (t: string) =>
-      ({ Trailer: 0, Teaser: 1, Featurette: 2, Clip: 3 } as Record<string, number>)[t] ?? 4;
-    return (await (input.movie ? getMovieVideos(tmdbId) : getTvVideos(tmdbId)))
-      .filter((v) => v.site === "YouTube")
-      .sort(
-        (a, b) =>
-          rank(a.type) - rank(b.type) ||
-          Number(b.official) - Number(a.official) ||
-          (b.published_at ?? "").localeCompare(a.published_at ?? "")
-      )
-      .map((v) => ({ key: v.key, name: v.name, type: v.type, official: v.official }))
-      .slice(0, 25); // big franchises have 80+ clips; keep the modal sane
+    return rankVideos(await (input.movie ? getMovieVideos(tmdbId) : getTvVideos(tmdbId)));
   } catch {
     return [];
+  }
+}
+
+/** YouTube only, trailers first, official first, newest first. */
+function rankVideos(videos: TmdbVideo[]): ShowVideo[] {
+  const rank = (t: string) =>
+    ({ Trailer: 0, Teaser: 1, Featurette: 2, Clip: 3 } as Record<string, number>)[t] ?? 4;
+  return videos
+    .filter((v) => v.site === "YouTube")
+    .sort(
+      (a, b) =>
+        rank(a.type) - rank(b.type) ||
+        Number(b.official) - Number(a.official) ||
+        (b.published_at ?? "").localeCompare(a.published_at ?? "")
+    )
+    .map((v) => ({ key: v.key, name: v.name, type: v.type, official: v.official }))
+    .slice(0, 25); // big franchises have 80+ clips; keep the modal sane
+}
+
+export interface WatchProvider {
+  name: string;
+  logoPath: string | null;
+}
+
+export interface MovieInfo {
+  tagline: string | null;
+  overview: string | null;
+  runtime: number | null;
+  genres: string[];
+  rating: number | null;
+  voteCount: number;
+  certification: string | null;
+  directors: string[];
+  writers: string[];
+  cast: { name: string; character: string | null; profilePath: string | null }[];
+  theatricalAt: string | null;
+  digitalAt: string | null;
+  /** US availability from TMDB's JustWatch data; `link` is TMDB's watch page. */
+  providers: { stream: WatchProvider[]; rent: WatchProvider[]; buy: WatchProvider[]; link: string | null };
+  imdbId: string | null;
+  videos: ShowVideo[];
+}
+
+/** Details, credits, US dates/rating, where-to-watch, and videos for the movie info modal. */
+export async function fetchMovieInfo(tmdbId: number): Promise<MovieInfo | null> {
+  try {
+    const d = await getMovieFull(tmdbId);
+    const crewNames = (jobs: string[]) => [
+      ...new Set(d.credits.crew.filter((c) => jobs.includes(c.job)).map((c) => c.name)),
+    ];
+    const us = d["watch/providers"].results.US ?? {};
+    const providers = (...lists: (TmdbWatchProvider[] | undefined)[]) => {
+      const seen = new Map<string, WatchProvider>();
+      for (const p of lists.flat()) {
+        if (p && !seen.has(p.provider_name)) {
+          seen.set(p.provider_name, { name: p.provider_name, logoPath: p.logo_path });
+        }
+      }
+      return [...seen.values()];
+    };
+    return {
+      tagline: d.tagline || null,
+      overview: d.overview || null,
+      runtime: d.runtime || null,
+      genres: d.genres.map((g) => g.name),
+      rating: d.vote_count ? d.vote_average : null,
+      voteCount: d.vote_count ?? 0,
+      certification: d.us.certification,
+      directors: crewNames(["Director"]),
+      writers: crewNames(["Screenplay", "Writer"]).slice(0, 4),
+      cast: d.credits.cast.slice(0, 12).map((c) => ({
+        name: c.name,
+        character: c.character || null,
+        profilePath: c.profile_path,
+      })),
+      theatricalAt: d.us.theatrical,
+      digitalAt: d.us.digital,
+      providers: {
+        stream: providers(us.flatrate, us.free, us.ads),
+        rent: providers(us.rent),
+        buy: providers(us.buy),
+        link: us.link ?? null,
+      },
+      imdbId: d.imdb_id || null,
+      videos: rankVideos(d.videos.results),
+    };
+  } catch {
+    return null;
   }
 }
 

@@ -154,21 +154,94 @@ export async function discoverUsMovies(
   return out;
 }
 
-/** Earliest US theatrical (type 2/3) and digital (type 4) release dates. */
-export async function getUsReleaseDates(
-  tmdbId: number
-): Promise<{ theatrical: string | null; digital: string | null }> {
-  const r = await get<{
-    results: { iso_3166_1: string; release_dates: { type: number; release_date: string }[] }[];
-  }>(`/movie/${tmdbId}/release_dates`);
+/** Title search — first page (~20 results) in TMDB's relevance order. */
+export async function searchMovies(query: string): Promise<TmdbMovieSummary[]> {
+  const r = await get<{ results: TmdbMovieSummary[] }>(
+    `/search/movie?query=${encodeURIComponent(query)}&include_adult=false`,
+    3600
+  );
+  return r.results;
+}
+
+export function getMovieDetails(tmdbId: number): Promise<TmdbMovieSummary> {
+  return get<TmdbMovieSummary>(`/movie/${tmdbId}`);
+}
+
+interface TmdbReleaseDates {
+  results: {
+    iso_3166_1: string;
+    release_dates: { type: number; release_date: string; certification?: string }[];
+  }[];
+}
+
+/**
+ * Earliest US theatrical (type 2/3) and digital (type 4) release dates, plus
+ * the US rating (theatrical certification preferred).
+ */
+function usReleaseInfo(r: TmdbReleaseDates) {
   const us = r.results.find((x) => x.iso_3166_1 === "US");
   let theatrical: string | null = null;
   let digital: string | null = null;
+  let certification: string | null = null;
   for (const rd of us?.release_dates ?? []) {
+    if (rd.certification && (!certification || rd.type === 3)) certification = rd.certification;
     const date = rd.release_date?.slice(0, 10) ?? null;
     if (!date) continue;
     if ((rd.type === 2 || rd.type === 3) && (!theatrical || date < theatrical)) theatrical = date;
     if (rd.type === 4 && (!digital || date < digital)) digital = date;
   }
+  return { theatrical, digital, certification };
+}
+
+export async function getUsReleaseDates(
+  tmdbId: number,
+  revalidate?: number
+): Promise<{ theatrical: string | null; digital: string | null }> {
+  const r = await get<TmdbReleaseDates>(`/movie/${tmdbId}/release_dates`, revalidate);
+  const { theatrical, digital } = usReleaseInfo(r);
   return { theatrical, digital };
+}
+
+export interface TmdbWatchProvider {
+  provider_name: string;
+  logo_path: string | null;
+}
+
+export interface TmdbMovieFull {
+  title: string;
+  tagline: string | null;
+  overview: string | null;
+  runtime: number | null;
+  vote_average: number | null;
+  vote_count: number | null;
+  imdb_id: string | null;
+  genres: { name: string }[];
+  credits: {
+    cast: { name: string; character: string | null; profile_path: string | null }[];
+    crew: { name: string; job: string }[];
+  };
+  release_dates: TmdbReleaseDates;
+  "watch/providers": {
+    results: Record<
+      string,
+      {
+        link?: string;
+        flatrate?: TmdbWatchProvider[];
+        free?: TmdbWatchProvider[];
+        ads?: TmdbWatchProvider[];
+        rent?: TmdbWatchProvider[];
+        buy?: TmdbWatchProvider[];
+      }
+    >;
+  };
+  videos: { results: TmdbVideo[] };
+}
+
+/** Everything the movie info modal needs, in one request (cached a day). */
+export async function getMovieFull(tmdbId: number) {
+  const d = await get<TmdbMovieFull>(
+    `/movie/${tmdbId}?append_to_response=credits,release_dates,watch/providers,videos`,
+    86400
+  );
+  return { ...d, us: usReleaseInfo(d.release_dates) };
 }

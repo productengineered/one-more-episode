@@ -57,6 +57,20 @@ export function dayLabel(iso: string, tz?: string): string {
   });
 }
 
+/** Today as "2026-09-18" in the user's timezone — compares directly with date-only strings. */
+export function todayIso(tz?: string): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: tz });
+}
+
+/** "October 2026" for a date-only string (rendered verbatim, never shifted). */
+export function monthLabel(isoDate: string): string {
+  return new Date(`${isoDate.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function relativeDays(iso: string): string {
   const days = Math.ceil((Date.parse(iso) - Date.now()) / 86400_000);
   if (days === -1) return "yesterday";

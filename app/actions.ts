@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { authEnabled, SESSION_COOKIE, sessionToken, sha256Hex } from "@/lib/auth";
@@ -8,7 +8,7 @@ import { getStoredPasswordHash, isAuthenticated } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 import { airing, episodes, moviesFeed, shows, trackedMovies, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
-import { deleteSetting, setSetting } from "@/lib/settings";
+import { deleteSetting, getPlexTrackedIds, savePlexTrackedIds, setSetting } from "@/lib/settings";
 import {
   discoverUsMovies,
   findTvByExternal,
@@ -27,6 +27,15 @@ import { getFullSchedule, lookupByImdb, lookupByTvdb, searchShows } from "@/lib/
 
 function revalidateAll() {
   revalidatePath("/", "layout");
+}
+
+/** Aired = airstamp in the past, or (no airstamp) a past date-only airdate —
+ * the same rule getAllProgress counts by, so "mark all" clears the count. */
+function airedBy(nowIso: string) {
+  return or(
+    lte(episodes.airstamp, nowIso),
+    and(isNull(episodes.airstamp), lte(episodes.airdate, nowIso.slice(0, 10)))
+  );
 }
 
 export async function setEpisodeWatched(episodeId: number, isWatched: boolean) {
@@ -58,7 +67,7 @@ export async function setSeasonWatched(showId: number, season: number, isWatched
         eq(episodes.showId, showId),
         eq(episodes.season, season),
         isNotNull(episodes.number),
-        lte(episodes.airstamp, now)
+        airedBy(now)
       )
     );
   const ids = eps.map((e) => e.id);
@@ -81,7 +90,7 @@ export async function markShowWatched(showId: number) {
     .select({ id: episodes.id })
     .from(episodes)
     .where(
-      and(eq(episodes.showId, showId), isNotNull(episodes.number), lte(episodes.airstamp, now))
+      and(eq(episodes.showId, showId), isNotNull(episodes.number), airedBy(now))
     );
   if (!eps.length) return;
   await db
@@ -101,7 +110,7 @@ export async function markWatchedUpTo(episodeId: number) {
     .select({ id: episodes.id, season: episodes.season, number: episodes.number })
     .from(episodes)
     .where(
-      and(eq(episodes.showId, t.showId), isNotNull(episodes.number), lte(episodes.airstamp, now))
+      and(eq(episodes.showId, t.showId), isNotNull(episodes.number), airedBy(now))
     );
   const upTo = eps.filter(
     (e) =>
@@ -318,6 +327,17 @@ export async function unfollowShow(showId: number) {
   await db.delete(watched).where(eq(watched.showId, showId));
   await db.delete(episodes).where(eq(episodes.showId, showId));
   await db.delete(shows).where(eq(shows.id, showId));
+  const tracked = await getPlexTrackedIds();
+  if (tracked.delete(showId)) await savePlexTrackedIds(tracked);
+  revalidateAll();
+}
+
+/** Toggle "Track for Plex": tracked shows get On Plex / Not on Plex on Upcoming. */
+export async function setPlexTracked(showId: number, isTracked: boolean) {
+  const tracked = await getPlexTrackedIds();
+  if (isTracked) tracked.add(showId);
+  else tracked.delete(showId);
+  await savePlexTrackedIds(tracked);
   revalidateAll();
 }
 

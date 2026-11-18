@@ -43,3 +43,21 @@ export async function getTmdbCredential(): Promise<TmdbCredential | null> {
   if (!value) return null;
   return { kind: value.startsWith("eyJ") ? "bearer" : "v3", value };
 }
+
+const PLEX_TRACKED_KEY = "plex_tracked_shows";
+
+/** Show ids the user ticked "Track for Plex" on — only these get Plex badges
+ * on Upcoming. Stored as a JSON array in settings (no schema migration). */
+export async function getPlexTrackedIds(): Promise<Set<number>> {
+  const raw = await getSetting(PLEX_TRACKED_KEY).catch(() => null);
+  try {
+    const ids: unknown = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(ids) ? ids.filter((n) => typeof n === "number") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export async function savePlexTrackedIds(ids: Set<number>) {
+  await setSetting(PLEX_TRACKED_KEY, JSON.stringify([...ids].sort((a, b) => a - b)));
+}

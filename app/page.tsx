@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { plexEpisodes, plexShows } from "@/lib/db/schema";
 import { dayLabel, epCode, formatDateTime, formatTime, relativeDays } from "@/lib/format";
 import { getAllProgress, getUpcoming } from "@/lib/queries";
-import { getUserTimezone } from "@/lib/settings";
+import { getPlexTrackedIds, getUserTimezone } from "@/lib/settings";
 import { RefreshAllButton } from "@/components/RefreshAllButton";
 import { TodayScroll } from "@/components/TodayScroll";
 
@@ -14,14 +14,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export default async function UpcomingPage() {
-  const [tz, upcoming, progress, plexShowRows, plexEpisodeRows] = await Promise.all([
+  const [tz, upcoming, progress, plexTracked, plexEpisodeRows] = await Promise.all([
     getUserTimezone(),
     getUpcoming(),
     getAllProgress(),
-    db
-      .select({ id: plexShows.tvmazeShowId })
-      .from(plexShows)
-      .where(isNotNull(plexShows.tvmazeShowId)),
+    getPlexTrackedIds(),
     db
       .select({
         showId: plexShows.tvmazeShowId,
@@ -32,12 +29,18 @@ export default async function UpcomingPage() {
       .innerJoin(plexShows, eq(plexEpisodes.showRatingKey, plexShows.ratingKey))
       .where(isNotNull(plexShows.tvmazeShowId)),
   ]);
-  const plexShowIds = new Set(plexShowRows.map((r) => r.id));
   const plexEpisodeKeys = new Set(
     plexEpisodeRows
       .filter((r) => r.season !== null && r.number !== null)
       .map((r) => `${r.showId}:${r.season}:${r.number}`)
   );
+  // Plex badges only for shows ticked "Track for Plex" on their show page.
+  const plexStatus = (showId: number, season: number, number: number | null) =>
+    !plexTracked.has(showId)
+      ? null
+      : plexEpisodeKeys.has(`${showId}:${season}:${number}`)
+        ? "on"
+        : "off";
 
   const todayLabel = dayLabel(new Date().toISOString(), tz);
   const now = Date.now();
@@ -153,34 +156,32 @@ export default async function UpcomingPage() {
                     {show.network && (
                       <span className="truncate text-zinc-600">{show.network}</span>
                     )}
-                    {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (
+                    {plexStatus(show.id, episode.season, episode.number) === "on" && (
                       <span className="font-semibold text-amber-400">» On Plex</span>
-                    ) : (
-                      plexShowIds.has(show.id) && (
-                        <span className="text-zinc-600">» Not on Plex</span>
-                      )
+                    )}
+                    {plexStatus(show.id, episode.season, episode.number) === "off" && (
+                      <span className="text-zinc-600">» Not on Plex</span>
                     )}
                   </p>
                 </div>
                 <div className="hidden shrink-0 text-right text-xs text-zinc-500 sm:block">
                   <p>{formatDateTime(episode.airstamp, tz)}</p>
                   {show.network && <p className="text-zinc-600">{show.network}</p>}
-                  {plexEpisodeKeys.has(`${show.id}:${episode.season}:${episode.number}`) ? (
+                  {plexStatus(show.id, episode.season, episode.number) === "on" && (
                     <p
                       className="mt-0.5 text-sm font-semibold text-amber-400"
                       title="Episode is in your Plex"
                     >
                       » On Plex
                     </p>
-                  ) : (
-                    plexShowIds.has(show.id) && (
-                      <p
-                        className="mt-0.5 text-sm text-zinc-600"
-                        title="Show is on your Plex — this episode isn't there yet"
-                      >
-                        » Not on Plex
-                      </p>
-                    )
+                  )}
+                  {plexStatus(show.id, episode.season, episode.number) === "off" && (
+                    <p
+                      className="mt-0.5 text-sm text-zinc-600"
+                      title="Tracked for Plex — this episode isn't there yet"
+                    >
+                      » Not on Plex
+                    </p>
                   )}
                 </div>
               </li>

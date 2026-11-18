@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchShowVideos, setSeasonWatched, refreshShow } from "@/app/actions";
 import { UnfollowButton } from "@/components/UnfollowButton";
+import { PlexTrackButton } from "@/components/PlexTrackButton";
 import { WatchedButton } from "@/components/WatchedButton";
 import { CatchUpButton } from "@/components/CatchUpButton";
 import { MarkAllButton } from "@/components/MarkAllButton";
@@ -11,7 +12,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { SimilarGrid } from "@/components/SimilarGrid";
 import { formatDate, formatDateTime, relativeDays, stripHtml } from "@/lib/format";
 import { getShowDetail } from "@/lib/queries";
-import { getUserTimezone } from "@/lib/settings";
+import { getPlexTrackedIds, getUserTimezone } from "@/lib/settings";
 import { getSimilarShows } from "@/lib/similar";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import { syncShow } from "@/lib/sync";
@@ -58,7 +59,11 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
     .sort((a, b) => Date.parse(a.airstamp!) - Date.parse(b.airstamp!))[0];
   const genres: string[] = show.genres ? JSON.parse(show.genres) : [];
 
-  const [tz, tmdbConfigured] = await Promise.all([getUserTimezone(), isTmdbConfigured()]);
+  const [tz, tmdbConfigured, plexTracked] = await Promise.all([
+    getUserTimezone(),
+    isTmdbConfigured(),
+    getPlexTrackedIds(),
+  ]);
   const [similarShows, trailerVideos] = tmdbConfigured
     ? await Promise.all([
         getSimilarShows(show).catch(() => []),
@@ -147,6 +152,7 @@ export default async function ShowDetailPage({ params }: PageProps<"/shows/[id]"
                 ↻ Refresh
               </button>
             </form>
+            <PlexTrackButton showId={showId} initial={plexTracked.has(showId)} />
             <UnfollowButton showId={showId} showName={show.name} />
           </div>
         </div>

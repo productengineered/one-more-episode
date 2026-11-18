@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "./db";
-import { episodes, shows } from "./db/schema";
+import { episodes, shows, watched } from "./db/schema";
 import { getShowWithEpisodes, TvmazeShow } from "./tvmaze";
 
 export function showValues(s: TvmazeShow, extra?: { followedAt?: string | null }) {
@@ -56,14 +56,47 @@ export async function syncShow(tvmazeId: number, extra?: { followedAt?: string |
       set: { ...sv, followedAt: undefined } as Partial<typeof sv>,
     });
 
-  // Replace the show's episodes wholesale in chunked bulk inserts — episode ids
-  // are stable TVmaze ids, so watched rows keep pointing at the right episodes.
-  // (Per-row upserts made following a long-running show take seconds.)
+  // Upsert episodes in chunked bulk statements. NEVER delete-and-reinsert:
+  // @libsql/client turns PRAGMA foreign_keys on, so deleting an episode row
+  // cascades to its watched row — a wholesale replace silently wiped the
+  // show's entire watch history on every refresh.
   const eps = s._embedded?.episodes ?? [];
   const rows = eps.map((e) => episodeValues(s.id, e));
-  await db.delete(episodes).where(eq(episodes.showId, s.id));
+  const excluded = (col: string) => sql.raw(`excluded.${col}`);
   for (let i = 0; i < rows.length; i += 100) {
-    await db.insert(episodes).values(rows.slice(i, i + 100));
+    await db
+      .insert(episodes)
+      .values(rows.slice(i, i + 100))
+      .onConflictDoUpdate({
+        target: episodes.id,
+        set: {
+          showId: excluded("show_id"),
+          season: excluded("season"),
+          number: excluded("number"),
+          type: excluded("type"),
+          name: excluded("name"),
+          airdate: excluded("airdate"),
+          airstamp: excluded("airstamp"),
+          runtime: excluded("runtime"),
+          imageMedium: excluded("image_medium"),
+          summary: excluded("summary"),
+        },
+      });
+  }
+
+  // Drop episodes TVmaze no longer lists. Skipped when the response has no
+  // episodes at all, so an API hiccup can't empty a show.
+  if (rows.length) {
+    const ids = rows.map((r) => r.id);
+    const gone = await db
+      .select({ id: episodes.id })
+      .from(episodes)
+      .where(and(eq(episodes.showId, s.id), notInArray(episodes.id, ids)));
+    if (gone.length) {
+      const goneIds = gone.map((g) => g.id);
+      await db.delete(watched).where(inArray(watched.episodeId, goneIds));
+      await db.delete(episodes).where(inArray(episodes.id, goneIds));
+    }
   }
 
   return { show: s, episodeCount: eps.length };

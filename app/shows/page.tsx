@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MarkAllButton } from "@/components/MarkAllButton";
+import { PlexTrackButton } from "@/components/PlexTrackButton";
 import { ShowsSearch } from "@/components/ShowsSearch";
 import { ProgressBar } from "@/components/ProgressBar";
 import { getAllProgress, type ShowProgress } from "@/lib/queries";
+import { getPlexTrackedIds } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ function statusBadge(status: string) {
   return styles[status] ?? "bg-zinc-700/40 text-zinc-400";
 }
 
-function ShowGrid({ items }: { items: ShowProgress[] }) {
+function ShowGrid({ items, plexTracked }: { items: ShowProgress[]; plexTracked: Set<number> }) {
   return (
     <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
       {items.map(({ show, airedCount, watchedCount }) => (
@@ -56,6 +58,7 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
             {watchedCount < airedCount && (
               <MarkAllButton showId={show.id} remaining={airedCount - watchedCount} />
             )}
+            <PlexTrackButton showId={show.id} initial={plexTracked.has(show.id)} size="sm" />
           </div>
         </li>
       ))}
@@ -66,7 +69,8 @@ function ShowGrid({ items }: { items: ShowProgress[] }) {
 export default async function ShowsPage({ searchParams }: PageProps<"/shows">) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim().toLowerCase() : "";
-  let progress = await getAllProgress();
+  const [allProgress, plexTracked] = await Promise.all([getAllProgress(), getPlexTrackedIds()]);
+  let progress = allProgress;
   if (q) progress = progress.filter((p) => p.show.name.toLowerCase().includes(q));
   const watching = progress.filter((p) => p.nextUnwatched);
   const upToDate = progress.filter((p) => !p.nextUnwatched && p.show.status !== "Ended");
@@ -99,7 +103,7 @@ export default async function ShowsPage({ searchParams }: PageProps<"/shows">) {
           items.length > 0 && (
             <section key={title}>
               <h2 className="mb-3 text-sm font-semibold text-zinc-300">{title}</h2>
-              <ShowGrid items={items} />
+              <ShowGrid items={items} plexTracked={plexTracked} />
             </section>
           )
       )}

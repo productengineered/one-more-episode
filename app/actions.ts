@@ -8,7 +8,7 @@ import { getStoredPasswordHash, isAuthenticated } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 import { airing, episodes, moviesFeed, shows, trackedMovies, watched } from "@/lib/db/schema";
 import { syncShow } from "@/lib/sync";
-import { deleteSetting, getPlexTrackedIds, savePlexTrackedIds, setSetting } from "@/lib/settings";
+import { deleteSetting, setPlexTrackedId, setSetting } from "@/lib/settings";
 import {
   discoverUsMovies,
   findTvByExternal,
@@ -327,17 +327,13 @@ export async function unfollowShow(showId: number) {
   await db.delete(watched).where(eq(watched.showId, showId));
   await db.delete(episodes).where(eq(episodes.showId, showId));
   await db.delete(shows).where(eq(shows.id, showId));
-  const tracked = await getPlexTrackedIds();
-  if (tracked.delete(showId)) await savePlexTrackedIds(tracked);
+  await setPlexTrackedId(showId, false);
   revalidateAll();
 }
 
 /** Toggle "Track for Plex": tracked shows get On Plex / Not on Plex on Upcoming. */
 export async function setPlexTracked(showId: number, isTracked: boolean) {
-  const tracked = await getPlexTrackedIds();
-  if (isTracked) tracked.add(showId);
-  else tracked.delete(showId);
-  await savePlexTrackedIds(tracked);
+  await setPlexTrackedId(showId, isTracked);
   revalidateAll();
 }
 

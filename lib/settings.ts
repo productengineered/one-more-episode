@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "./db";
 import { settings } from "./db/schema";
@@ -58,6 +58,26 @@ export async function getPlexTrackedIds(): Promise<Set<number>> {
   }
 }
 
-export async function savePlexTrackedIds(ids: Set<number>) {
-  await setSetting(PLEX_TRACKED_KEY, JSON.stringify([...ids].sort((a, b) => a - b)));
+/**
+ * Add or remove one show id in a single atomic statement — the Shows grid
+ * lets you tick many cards quickly, and a read-modify-write of the JSON
+ * array would let concurrent toggles overwrite each other.
+ */
+export async function setPlexTrackedId(showId: number, isTracked: boolean) {
+  // libsql binds JS numbers as REAL; cast so the array stores 5, not 5.0.
+  const id = sql`CAST(${Math.trunc(showId)} AS INTEGER)`;
+  if (isTracked) {
+    await db.run(sql`
+      INSERT INTO settings (key, value) VALUES (${PLEX_TRACKED_KEY}, json_array(${id}))
+      ON CONFLICT (key) DO UPDATE SET value = CASE
+        WHEN EXISTS (SELECT 1 FROM json_each(settings.value) WHERE value = ${id})
+          THEN settings.value
+        ELSE json_insert(settings.value, '$[#]', ${id})
+      END`);
+  } else {
+    await db.run(sql`
+      UPDATE settings
+      SET value = (SELECT json_group_array(value) FROM json_each(settings.value) WHERE value != ${id})
+      WHERE key = ${PLEX_TRACKED_KEY}`);
+  }
 }
